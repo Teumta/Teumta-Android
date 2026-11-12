@@ -30,11 +30,12 @@ data class RouteInput(
     val stayMin: Int,
 )
 
-// 처음 보여 줄 도착 시각: 지금(한국 시각)부터 1시간 30분 뒤를 10분 단위로 올린다.
-// 열차가 없는 새벽(01~06시)이면 09:00으로 둔다. 언제 열어도 결과가 나오게 하려는 것이다
+// 처음 보여 줄 도착 시각: 지금(한국 시각)부터 3시간 뒤를 10분 단위로 올린다.
+// 예시 경로(서울역 → 구로 30분 → 인천)는 머무름까지 2시간 넘게 걸려서 넉넉히 잡았다.
+// 01~07시대면 첫차 무렵이라 09:00으로 둔다. 언제 열어도 결과가 나오게 하려는 것이다(ExampleRouteTest)
 fun defaultArriveBy(now: ZonedDateTime): LocalTime {
-    val later = now.withZoneSameInstant(ServiceTime.SEOUL).toLocalTime().plusMinutes(90)
+    val later = now.withZoneSameInstant(ServiceTime.SEOUL).toLocalTime().plusMinutes(180)
     val roundUp = (later.minute + 9) / 10 * 10
     val rounded = LocalTime.of(later.hour, 0).plusMinutes(roundUp.toLong())
-    return if (rounded.hour in 1..6) LocalTime.of(9, 0) else rounded
+    return if (rounded.hour in 1..7) LocalTime.of(9, 0) else rounded
 }
