@@ -8,6 +8,9 @@ import kotlinx.serialization.Serializable
 object InputDestination
 
 @Serializable
+object InfoDestination
+
+@Serializable
 data class ResultDestination(
     val fromId: String,
     val viaId: String,
