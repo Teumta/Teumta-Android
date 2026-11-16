@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -41,8 +42,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.teumta.app.domain.model.Station
 import com.teumta.app.ui.theme.TeumtaTheme
 import java.time.LocalTime
@@ -53,7 +54,7 @@ import java.time.format.DateTimeFormatter
 fun InputRoute(
     onCalculate: (RouteInput) -> Unit,
     onInfoClick: () -> Unit,
-    viewModel: InputViewModel = viewModel(factory = InputViewModel.Factory),
+    viewModel: InputViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     InputScreen(
@@ -61,7 +62,7 @@ fun InputRoute(
         onStationTap = viewModel::onStationTap,
         onArriveByChange = viewModel::onArriveByChange,
         onStayChange = viewModel::onStayChange,
-        onCalculate = { state.toRouteInput()?.let(onCalculate) },
+        onCalculate = { viewModel.onCalculate()?.let(onCalculate) },
         onInfoClick = onInfoClick,
     )
 }
@@ -215,13 +216,20 @@ private fun InputBottomBar(
             modifier = Modifier.navigationBarsPadding().padding(horizontal = 20.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = onTimeClick) { Text("${state.arriveBy.format(TIME)}까지 도착") }
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                itemVerticalAlignment = Alignment.CenterVertically,
+            ) {
+                OutlinedButton(onClick = onTimeClick) {
+                    Text("${state.arriveBy.format(TIME)}까지 도착", maxLines = 1)
+                }
                 InputViewModel.STAY_OPTIONS.forEach { minutes ->
                     FilterChip(
                         selected = state.stayMin == minutes,
                         onClick = { onStayChange(minutes) },
-                        label = { Text(stayLabel(minutes)) },
+                        // 글자가 세로로 쪼개지지 않게 한 줄로만
+                        label = { Text(stayLabel(minutes), maxLines = 1) },
                     )
                 }
             }

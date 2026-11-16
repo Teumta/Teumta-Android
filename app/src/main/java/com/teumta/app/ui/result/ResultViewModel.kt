@@ -1,31 +1,32 @@
 package com.teumta.app.ui.result
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
-import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.toRoute
-import com.teumta.app.TeumtaApplication
 import com.teumta.app.data.TimetableRepository
 import com.teumta.app.domain.DepartureCalculator
 import com.teumta.app.domain.DepartureRequest
 import com.teumta.app.domain.ServiceTime
 import com.teumta.app.domain.chooseCalculationDay
 import com.teumta.app.ui.navigation.ResultDestination
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.time.LocalTime
+import javax.inject.Inject
 
 // 입력 화면에서 받은 값으로 계산해서 결과 또는 실패 이유를 상태로 내놓는다
-class ResultViewModel(
-    private val input: ResultDestination,
+@HiltViewModel
+class ResultViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
     private val repository: TimetableRepository,
 ) : ViewModel() {
 
+    // Navigation이 넘긴 값은 SavedStateHandle에 들어 있다. Hilt가 이 화면의 것을 넣어 준다
+    private val input: ResultDestination = savedStateHandle.toRoute()
     private val _uiState = MutableStateFlow<ResultUiState>(ResultUiState.Loading)
     val uiState: StateFlow<ResultUiState> = _uiState.asStateFlow()
 
@@ -58,16 +59,6 @@ class ResultViewModel(
                 stationNames = timetable.stations.associate { it.id to it.name },
                 stayMin = input.stayMin,
             )
-        }
-    }
-
-    companion object {
-        val Factory = viewModelFactory {
-            initializer {
-                val app = this[APPLICATION_KEY] as TeumtaApplication
-                // Navigation이 넘긴 값은 SavedStateHandle에 들어 있다
-                ResultViewModel(createSavedStateHandle().toRoute<ResultDestination>(), app.timetableRepository)
-            }
         }
     }
 }
