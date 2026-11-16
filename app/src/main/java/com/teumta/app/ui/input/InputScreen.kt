@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -215,13 +216,20 @@ private fun InputBottomBar(
             modifier = Modifier.navigationBarsPadding().padding(horizontal = 20.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = onTimeClick) { Text("${state.arriveBy.format(TIME)}까지 도착") }
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                itemVerticalAlignment = Alignment.CenterVertically,
+            ) {
+                OutlinedButton(onClick = onTimeClick) {
+                    Text("${state.arriveBy.format(TIME)}까지 도착", maxLines = 1)
+                }
                 InputViewModel.STAY_OPTIONS.forEach { minutes ->
                     FilterChip(
                         selected = state.stayMin == minutes,
                         onClick = { onStayChange(minutes) },
-                        label = { Text(stayLabel(minutes)) },
+                        // 글자가 세로로 쪼개지지 않게 한 줄로만
+                        label = { Text(stayLabel(minutes), maxLines = 1) },
                     )
                 }
             }
