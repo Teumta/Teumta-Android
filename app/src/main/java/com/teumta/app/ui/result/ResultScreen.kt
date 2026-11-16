@@ -25,8 +25,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.teumta.app.domain.DeparturePlan
 import com.teumta.app.domain.DepartureResult
 import com.teumta.app.domain.FailReason
@@ -37,7 +37,7 @@ import com.teumta.app.ui.formatServiceDay
 @Composable
 fun ResultRoute(
     onBack: () -> Unit,
-    viewModel: ResultViewModel = viewModel(factory = ResultViewModel.Factory),
+    viewModel: ResultViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     ResultScreen(state = state, onBack = onBack, onNextDay = viewModel::showNextDay)

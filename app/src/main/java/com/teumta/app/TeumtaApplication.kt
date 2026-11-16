@@ -1,10 +1,8 @@
 package com.teumta.app
 
 import android.app.Application
-import com.teumta.app.data.LocalTimetableRepository
-import com.teumta.app.data.TimetableRepository
+import dagger.hilt.android.HiltAndroidApp
 
-// 앱 전체에서 하나만 쓰는 객체를 둔다. 화면이 여러 개여도 시간표는 한 번만 읽는다
-class TeumtaApplication : Application() {
-    val timetableRepository: TimetableRepository by lazy { LocalTimetableRepository(this) }
-}
+// Hilt가 앱 전체에서 쓸 객체 보관소(SingletonComponent)를 여기서 만든다
+@HiltAndroidApp
+class TeumtaApplication : Application()

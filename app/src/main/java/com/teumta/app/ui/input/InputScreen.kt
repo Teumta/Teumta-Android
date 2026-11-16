@@ -42,8 +42,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.teumta.app.domain.model.Station
 import com.teumta.app.ui.theme.TeumtaTheme
 import java.time.LocalTime
@@ -54,7 +54,7 @@ import java.time.format.DateTimeFormatter
 fun InputRoute(
     onCalculate: (RouteInput) -> Unit,
     onInfoClick: () -> Unit,
-    viewModel: InputViewModel = viewModel(factory = InputViewModel.Factory),
+    viewModel: InputViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     InputScreen(
