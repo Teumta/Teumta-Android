@@ -25,8 +25,8 @@ android {
         applicationId = "com.teumta.app"
         minSdk = 26
         targetSdk = 37
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -47,7 +47,9 @@ android {
             if (!keystoreProperties.isEmpty) signingConfig = signingConfigs.getByName("release")
             optimization {
                 enable = true
-                packageScope = setOf("androidx.**", "kotlin.**", "kotlinx.**")
+                // 일부 패키지만 줄이면 R8이 Kotlin 표준 라이브러리 클래스를 다른 패키지로 옮겨 시작하자마자 꺼졌다(v0.2.0 준비 중).
+                // 기본값인 전체(**)로 줄인다. 라이브러리들은 필요한 keep 규칙을 함께 배포한다
+                packageScope = setOf("**")
             }
         }
     }
