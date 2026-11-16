@@ -1,23 +1,24 @@
 package com.teumta.app.ui.input
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
-import com.teumta.app.TeumtaApplication
 import com.teumta.app.data.TimetableRepository
 import com.teumta.app.domain.ServiceTime
 import com.teumta.app.domain.model.Station
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalTime
+import javax.inject.Inject
 
 // 입력 화면의 상태를 들고 있다. 화면을 돌려도(회전) ViewModel은 남아 있어서 고른 값이 유지된다
-class InputViewModel(private val repository: TimetableRepository) : ViewModel() {
+@HiltViewModel
+class InputViewModel @Inject constructor(
+    private val repository: TimetableRepository,
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(InputUiState(arriveBy = defaultArriveBy(ServiceTime.now())))
     val uiState: StateFlow<InputUiState> = _uiState.asStateFlow()
@@ -51,12 +52,5 @@ class InputViewModel(private val repository: TimetableRepository) : ViewModel() 
 
     companion object {
         val STAY_OPTIONS = listOf(10, 30, 60)
-
-        val Factory = viewModelFactory {
-            initializer {
-                val app = this[APPLICATION_KEY] as TeumtaApplication
-                InputViewModel(app.timetableRepository)
-            }
-        }
     }
 }
