@@ -41,4 +41,14 @@ class ServiceTimeTest {
         assertEquals(DayType.HOLIDAY, ServiceTime.dayType(LocalDate.of(2026, 11, 15))) // 일
         assertEquals(DayType.HOLIDAY, ServiceTime.dayType(LocalDate.of(2026, 12, 25))) // 금, 성탄절
     }
+
+    @Test
+    fun 평일에_걸린_2027년_공휴일과_대체공휴일() {
+        assertEquals(DayType.HOLIDAY, ServiceTime.dayType(LocalDate.of(2027, 2, 8))) // 월, 설날
+        assertEquals(DayType.HOLIDAY, ServiceTime.dayType(LocalDate.of(2027, 2, 9))) // 화, 대체공휴일
+        assertEquals(DayType.WEEKDAY, ServiceTime.dayType(LocalDate.of(2027, 2, 10))) // 수, 연휴 다음 날
+        assertEquals(DayType.HOLIDAY, ServiceTime.dayType(LocalDate.of(2027, 3, 1))) // 월, 3·1절
+        assertEquals(DayType.HOLIDAY, ServiceTime.dayType(LocalDate.of(2027, 9, 15))) // 수, 추석
+        assertEquals(DayType.HOLIDAY, ServiceTime.dayType(LocalDate.of(2027, 12, 27))) // 월, 대체공휴일
+    }
 }

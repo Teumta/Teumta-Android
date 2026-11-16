@@ -14,10 +14,30 @@ object ServiceTime {
     private const val DAY_START_HOUR = 3
     private const val SECONDS_PER_DAY = 86_400
 
-    // 공휴일. 2026-11-06 시간표를 쓰는 동안 남은 날만 넣었다 (서버를 붙이면 서버가 판단)
+    // 관공서 공휴일(대체공휴일 포함). 토·일은 이미 휴일이라 평일에 걸린 날만 결과가 달라진다.
+    // 출처: 한국천문연구원 2027년 월력 자료. 서버를 붙이면 서버가 판단한다
     private val HOLIDAYS = setOf(
-        LocalDate.of(2026, 12, 25),
-        LocalDate.of(2027, 1, 1),
+        LocalDate.of(2026, 12, 25), // 기독탄신일
+        LocalDate.of(2027, 1, 1), // 1월 1일
+        LocalDate.of(2027, 2, 6), LocalDate.of(2027, 2, 7), LocalDate.of(2027, 2, 8), // 설날
+        LocalDate.of(2027, 2, 9), // 대체공휴일(설날)
+        LocalDate.of(2027, 3, 1), // 3·1절
+        LocalDate.of(2027, 5, 1), // 노동절
+        LocalDate.of(2027, 5, 3), // 대체공휴일(노동절)
+        LocalDate.of(2027, 5, 5), // 어린이날
+        LocalDate.of(2027, 5, 13), // 부처님오신날
+        LocalDate.of(2027, 6, 6), // 현충일
+        LocalDate.of(2027, 7, 17), // 제헌절
+        LocalDate.of(2027, 7, 19), // 대체공휴일(제헌절)
+        LocalDate.of(2027, 8, 15), // 광복절
+        LocalDate.of(2027, 8, 16), // 대체공휴일(광복절)
+        LocalDate.of(2027, 9, 14), LocalDate.of(2027, 9, 15), LocalDate.of(2027, 9, 16), // 추석
+        LocalDate.of(2027, 10, 3), // 개천절
+        LocalDate.of(2027, 10, 4), // 대체공휴일(개천절)
+        LocalDate.of(2027, 10, 9), // 한글날
+        LocalDate.of(2027, 10, 11), // 대체공휴일(한글날)
+        LocalDate.of(2027, 12, 25), // 기독탄신일
+        LocalDate.of(2027, 12, 27), // 대체공휴일(기독탄신일)
     )
 
     fun now(): ZonedDateTime = ZonedDateTime.now(SEOUL)
