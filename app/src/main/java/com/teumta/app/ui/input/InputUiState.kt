@@ -1,6 +1,7 @@
 package com.teumta.app.ui.input
 
 import com.teumta.app.domain.ServiceTime
+import com.teumta.app.domain.model.LastRoute
 import com.teumta.app.domain.model.Station
 import java.time.LocalTime
 import java.time.ZonedDateTime
@@ -38,4 +39,14 @@ fun defaultArriveBy(now: ZonedDateTime): LocalTime {
     val roundUp = (later.minute + 9) / 10 * 10
     val rounded = LocalTime.of(later.hour, 0).plusMinutes(roundUp.toLong())
     return if (rounded.hour in 1..7) LocalTime.of(9, 0) else rounded
+}
+
+// 저장해 둔 경로를 지금 역 목록으로 되살린다. 역이 없어졌거나 선택 규칙에 맞지 않으면 null(예시 경로를 쓴다).
+// 출발 → 도착 → 경유 순서로 tap해서 RouteSelection의 규칙을 그대로 다시 쓴다
+fun restoreSelection(stations: List<Station>, saved: LastRoute): RouteSelection? {
+    val byId = stations.associateBy { it.id }
+    val from = byId[saved.fromId] ?: return null
+    val to = byId[saved.toId] ?: return null
+    val via = byId[saved.viaId] ?: return null
+    return RouteSelection().tap(from).tap(to).tap(via).takeIf { it.isComplete }
 }
