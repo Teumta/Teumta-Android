@@ -12,7 +12,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
-// DataStore는 생성자에 @Inject를 붙일 수 없다. 그래서 만드는 방법을 @Provides로 알려준다
+// DataStore는 우리가 만든 클래스가 아니라서 생성자에 @Inject를 붙일 수 없다.
+// 그래서 만드는 방법을 @Provides로 알려 준다
 @Module
 @InstallIn(SingletonComponent::class)
 object DataStoreModule {

@@ -2,16 +2,17 @@ package com.teumta.app.data
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import com.teumta.app.domain.model.LastRoute
-import junit.framework.Assert.assertEquals
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import java.io.File
 
+// DataStore는 파일만 있으면 되어서 에뮬레이터 없이 임시 폴더로 확인한다.
 class LastRouteStoreTest {
 
     @get:Rule

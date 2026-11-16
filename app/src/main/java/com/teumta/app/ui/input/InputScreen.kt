@@ -62,7 +62,7 @@ fun InputRoute(
         onStationTap = viewModel::onStationTap,
         onArriveByChange = viewModel::onArriveByChange,
         onStayChange = viewModel::onStayChange,
-        onCalculate = { state.toRouteInput()?.let(onCalculate) },
+        onCalculate = { viewModel.onCalculate()?.let(onCalculate) },
         onInfoClick = onInfoClick,
     )
 }

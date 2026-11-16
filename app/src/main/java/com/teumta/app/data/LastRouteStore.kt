@@ -1,7 +1,6 @@
 package com.teumta.app.data
 
 import androidx.datastore.core.DataStore
-import androidx.datastore.core.IOException
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
@@ -11,6 +10,7 @@ import com.teumta.app.domain.model.LastRoute
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -18,7 +18,7 @@ import javax.inject.Singleton
 @Singleton
 class LastRouteStore @Inject constructor(
     private val dataStore: DataStore<Preferences>,
-){
+) {
     // 저장한 값이 바뀔 때마다 새 값을 내보내는 흐름. 하나라도 비어 있으면 null
     val lastRoute: Flow<LastRoute?> = dataStore.data
         .catch { e -> if (e is IOException) emit(emptyPreferences()) else throw e } // 파일을 못 읽으면 빈 값으로
@@ -31,6 +31,7 @@ class LastRouteStore @Inject constructor(
             )
         }
 
+    // edit 안의 변경은 한 번에 저장된다(트랜잭션). 역 3개 중 일부만 저장되는 일이 없다.
     suspend fun save(route: LastRoute) {
         dataStore.edit { prefs ->
             prefs[FROM_ID] = route.fromId
