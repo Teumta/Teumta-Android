@@ -7,8 +7,9 @@ import kotlinx.serialization.json.Json
 // JSON 문자열 -> 시간표. 서버 응답 형식(GET /api/stations, GET /api/trains?dayType=)을 읽는다.
 // Android에 의존하지 않아서 단위 테스트에서도 쓴다
 object TimetableParser {
-    // 서버가 칸을 더 보내도(예: 역의 branch) 앱이 모르는 칸은 건너뛴다
-    private val json = Json { ignoreUnknownKeys = true }
+    // 서버가 칸을 더 보내도(예: 역의 branch) 앱이 모르는 칸은 건너뛴다.
+    // 서버에서 받을 때(Retrofit)도 같은 규칙으로 읽도록 밖에 내놓는다
+    val json = Json { ignoreUnknownKeys = true }
 
     // 역은 칸 이름이 앱 모델(Station)과 같아서 바로 읽는다
     fun parseStations(text: String): List<Station> = json.decodeFromString(text)
