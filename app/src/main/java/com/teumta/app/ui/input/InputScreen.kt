@@ -95,7 +95,7 @@ fun InputScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(Modifier.weight(1f)) {
-                    Text("1호선 서울역~인천 · 일반열차", style = MaterialTheme.typography.labelMedium)
+                    Text("1호선 102개 역 · 급행 포함", style = MaterialTheme.typography.labelMedium)
                     Text(guideText(state.selection), style = MaterialTheme.typography.titleLarge)
                 }
                 TextButton(onClick = onInfoClick) { Text("앱 정보") }

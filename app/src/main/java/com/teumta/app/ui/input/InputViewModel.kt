@@ -28,8 +28,10 @@ class InputViewModel @Inject constructor(
     val uiState: StateFlow<InputUiState> = _uiState.asStateFlow()
 
     init {
+        // 계산 버튼을 눌렀을 때 기다리지 않게, 역을 고르는 동안 열차 시간표를 미리 읽어 둔다
+        viewModelScope.launch { repository.getTimetable() }
         viewModelScope.launch {
-            val stations = repository.getTimetable().stations.sortedBy { it.order }
+            val stations = repository.getStations().sortedBy { it.order }
             // 지난번에 계산한 경로가 있으면 그 값으로 채우고, 없거나 쓸 수 없으면 예시 경로로 채운다
             val saved = lastRouteStore.lastRoute.first()
             val selection = saved?.let { restoreSelection(stations, it) } ?: exampleSelection(stations)

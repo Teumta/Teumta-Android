@@ -1,6 +1,6 @@
 package com.teumta.app.ui.input
 
-import com.teumta.app.data.TimetableParser
+import com.teumta.app.data.Line1Assets
 import com.teumta.app.domain.DepartureCalculator
 import com.teumta.app.domain.DepartureRequest
 import com.teumta.app.domain.DepartureResult
@@ -8,13 +8,12 @@ import com.teumta.app.domain.ServiceTime
 import com.teumta.app.domain.chooseCalculationDay
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.File
 import java.time.ZonedDateTime
 
 // 심사자가 언제 앱을 열어도, 예시 경로와 기본값 그대로 계산하면 결과가 나와야 한다
 class ExampleRouteTest {
 
-    private val timetable = TimetableParser.parse(File("src/main/assets/timetable.json").readText())
+    private val timetable = Line1Assets.timetable
     private val calculator = DepartureCalculator(timetable)
     private val idByName = timetable.stations.associate { it.name to it.id }
 
