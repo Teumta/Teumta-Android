@@ -42,16 +42,16 @@ class DepartureCalculatorTest {
         // C에 09:00까지 -> B에서 T2(08:40:30) -> B 도착 마감 08:40:30 - 10분 - 2분 = 08:28:30 -> T1
         val result = calculate(arriveBy = "09:00", stayMin = 10)
 
-        assertEquals("T1", result.plan.first.train.id)
+        assertEquals(listOf("T1"), result.plan.first.trainIds)
         assertEquals(sec("08:00"), result.plan.departSec)
-        assertEquals("T2", result.plan.second.train.id)
-        assertEquals("T0", result.alternative?.first?.train?.id)
+        assertEquals(listOf("T2"), result.plan.second.trainIds)
+        assertEquals(listOf("T0"), result.alternative?.first?.trainIds)
     }
 
     @Test
     fun 도착_시각과_정확히_같은_열차도_탈_수_있다() {
-        assertEquals("T2", calculate(arriveBy = "08:50", stayMin = 10).plan.second.train.id)
-        assertEquals("T1", calculate(arriveBy = "08:49:59", stayMin = 10).plan.second.train.id)
+        assertEquals(listOf("T2"), calculate(arriveBy = "08:50", stayMin = 10).plan.second.trainIds)
+        assertEquals(listOf("T1"), calculate(arriveBy = "08:49:59", stayMin = 10).plan.second.trainIds)
     }
 
     @Test
@@ -59,7 +59,7 @@ class DepartureCalculatorTest {
         // B 도착 마감 08:40:30 - 2분 = 08:38:30 -> T2는 B에 08:40 도착이라 안 되고 T1
         val result = calculate(arriveBy = "09:00", stayMin = 0)
 
-        assertEquals("T1", result.plan.first.train.id)
+        assertEquals(listOf("T1"), result.plan.first.trainIds)
         // B에 08:10 도착, 08:40:30 출발 -> 여유 2분을 빼면 실제로 머무를 수 있는 시간은 28분 30초
         assertEquals(28 * 60 + 30, result.plan.staySec)
     }
@@ -91,13 +91,13 @@ class DepartureCalculatorTest {
     @Test
     fun 자정_넘은_도착_시각도_계산한다() {
         val result = calculate(arriveBy = "24:40", stayMin = 10)
-        assertEquals("T4", result.plan.second.train.id)
-        assertEquals("T3", result.plan.first.train.id)
+        assertEquals(listOf("T4"), result.plan.second.trainIds)
+        assertEquals(listOf("T3"), result.plan.first.trainIds)
     }
 
     @Test(expected = IllegalArgumentException::class)
-    fun 경유역이_출발역과_도착역_사이에_없으면_예외() {
-        calculator.calculate(DepartureRequest("A", "C", "B", DayType.WEEKDAY, sec("09:00"), 10))
+    fun 같은_역을_두_번_고르면_예외() {
+        calculator.calculate(DepartureRequest("A", "A", "C", DayType.WEEKDAY, sec("09:00"), 10))
     }
 
     private fun calculate(arriveBy: String, stayMin: Int): DepartureResult.Success {
@@ -124,6 +124,9 @@ class DepartureCalculatorTest {
             stops = listOf(Stop("A", a, a), Stop("B", a + 600, a + 630), Stop("C", a + 1200, a + 1200)),
         )
     }
+
+    // 탄 열차 ID를 순서대로. 갈아타지 않으면 하나다
+    private val Journey.trainIds: List<String> get() = rides.map { it.train.id }
 
     // "08:40:30", "24:10" -> 초
     private fun sec(time: String): Int {

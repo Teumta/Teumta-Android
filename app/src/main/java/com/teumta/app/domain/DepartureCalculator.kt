@@ -1,7 +1,6 @@
 package com.teumta.app.domain
 
 import com.teumta.app.domain.model.DayType
-import com.teumta.app.domain.model.Direction
 import com.teumta.app.domain.model.Timetable
 import com.teumta.app.domain.model.Train
 
@@ -30,8 +29,8 @@ data class Ride(
 
 // 답: 출발역 -> 경유역(머무름) -> 도착역
 data class DeparturePlan(
-    val first: Ride,
-    val second: Ride,
+    val first: Journey,
+    val second: Journey,
 ) {
     // 출발역에서 타야 하는 시각
     val departSec: Int get() = first.departSec
@@ -56,69 +55,54 @@ sealed interface DepartureResult {
     data class Failure(val reason: FailReason) : DepartureResult
 }
 
-// 도착 시각에서 거꾸로 계산한다.
-// 1. 경유역 -> 도착역: 도착 시각 전에 도착하는 열차 중 경유역에서 가장 늦게 떠나는 열차
-// 2. 경유역에는 그 열차 출발 − 머무를 시간 − 2분까지 도착해야 한다
-// 3. 출발역-> 경유역: 그 시각 전에 경유역에 도착하는 열차 중 가장 늦게 떠나는 열차가 답, 그 앞 열차가 대안
+// 도착 시각에서 거꾸로 계산한다. 구간마다 갈아타기도 고려한다.
+// 1. 경유역 -> 도착역: 도착 시각까지 도착할 수 있는 가장 늦은 경유역 출발
+// 2. 경유역에는 그 출발 − 머무를 시간 − 2분까지 도착해야 한다
+// 3. 출발역 -> 경유역: 그 시각까지 경유역에 도착할 수 있는 가장 늦은 출발이 답, 그 앞 출발이 대안
+// 출발 시각을 정한 다음에는 제시간에 닿는 경로 중 갈아타기가 가장 적은 것을 고른다
 class DepartureCalculator(private val timetable: Timetable) {
 
-    private val orderById = timetable.stations.associate { it.id to it.order }
+    private val transferSecById = timetable.stations.associate { it.id to (it.transferSec ?: TRANSFER_BUFFER_SEC) }
 
     fun calculate(request: DepartureRequest): DepartureResult {
-        val fromOrder = orderOf(request.fromId)
-        val viaOrder = orderOf(request.viaId)
-        val toOrder = orderOf(request.toId)
-        require(viaOrder in minOf(fromOrder, toOrder) + 1 until maxOf(fromOrder, toOrder)) {
-            "경유역은 출발역과 도착역 사이에 있어야 한다"
+        require(setOf(request.fromId, request.viaId, request.toId).size == 3) { "출발역, 경유역, 도착역은 서로 달라야 한다" }
+        listOf(request.fromId, request.viaId, request.toId).forEach {
+            require(it in transferSecById) { "시간표에 없는 역: $it" }
         }
-        val direction = if (fromOrder < toOrder) Direction.DOWN else Direction.UP
-        val trains = timetable.trains.filter { it.dayType == request.dayType && it.direction == direction }
+        val search = JourneySearch(
+            trains = timetable.trains.filter { it.dayType == request.dayType },
+            transferSecOf = { transferSecById.getValue(it) },
+        )
 
         // 1. 경유역 -> 도착역
-        val second = rides(trains, request.viaId, request.toId)
-            .filter { it.arriveSec <= request.arriveBySec }
-            .maxByOrNull { it.departSec }
-            ?: return DepartureResult.Failure(FailReason.NO_TRAIN_BEFORE_ARRIVAL)
+        val secondDepart = search.latestDepartures(request.viaId, request.toId, request.arriveBySec, limit = 1)
+            .firstOrNull() ?: return DepartureResult.Failure(FailReason.NO_TRAIN_BEFORE_ARRIVAL)
+        val second = journey(search, request.viaId, request.toId, secondDepart, request.arriveBySec)
 
         // 2. 경유역 도착 마감
         val viaDeadline = second.departSec - request.stayMin * 60 - TRANSFER_BUFFER_SEC
 
-        // 3. 출발역 -> 경유역 (늦게 떠나는 순)
-        val firsts = rides(trains, request.fromId, request.viaId)
-            .filter { it.arriveSec <= viaDeadline }
-            .sortedByDescending { it.departSec }
-        if (firsts.isEmpty()) return DepartureResult.Failure(FailReason.STAY_TOO_LONG)
+        // 3. 출발역 -> 경유역 (늦게 떠나는 순으로 두 개)
+        val departs = search.latestDepartures(request.fromId, request.viaId, viaDeadline, limit = 2)
+        if (departs.isEmpty()) return DepartureResult.Failure(FailReason.STAY_TOO_LONG)
 
         val now = request.nowSec
-        if (now != null && firsts[0].departSec < now) {
+        if (now != null && departs[0] < now) {
             return DepartureResult.Failure(FailReason.ALREADY_DEPARTED)
         }
-        val alternative = firsts.getOrNull(1)?.takeIf { now == null || it.departSec >= now }
+        val alternative = departs.getOrNull(1)?.takeIf { now == null || it >= now }
         return DepartureResult.Success(
-            plan = DeparturePlan(firsts[0], second),
-            alternative = alternative?.let { DeparturePlan(it, second) },
+            plan = DeparturePlan(journey(search, request.fromId, request.viaId, departs[0], viaDeadline), second),
+            alternative = alternative?.let { DeparturePlan(journey(search, request.fromId, request.viaId, it, viaDeadline), second) },
         )
     }
 
-    // from에서 타서 to에서 내릴 수 있는 열차 구간 목록
-    private fun rides(trains: List<Train>, fromId: String, toId: String): List<Ride> = trains.mapNotNull { train ->
-        val boardIndex = train.stops.indexOfFirst { it.stationId == fromId }
-        val alightIndex = train.stops.indexOfFirst { it.stationId == toId }
-        if (boardIndex == -1 || alightIndex == -1 || boardIndex >= alightIndex) return@mapNotNull null
-        Ride(
-            train = train,
-            fromId = fromId,
-            departSec = train.stops[boardIndex].dep,
-            toId = toId,
-            arriveSec = train.stops[alightIndex].arr,
-        )
-    }
-
-    private fun orderOf(stationId: String): Int =
-        requireNotNull(orderById[stationId]) { "시간표에 없는 역: $stationId" }
+    // latestDepartures가 찾은 시각은 그 시각에 떠나 도착할 수 있다는 뜻이라 경로가 반드시 있다
+    private fun journey(search: JourneySearch, fromId: String, toId: String, departAt: Int, deadline: Int): Journey =
+        checkNotNull(search.journey(fromId, toId, departAt, deadline)) { "$fromId -> $toId ${departAt}초 출발 경로가 없다" }
 
     companion object {
-        // 경유역에서 내리고 다시 타는 여유 (2분)
+        // 내리고 다시 타는 여유 (2분). 경유역에서 쓰고, 갈아타는 시간이 따로 없는 역에서도 쓴다
         const val TRANSFER_BUFFER_SEC = 120
     }
 }
