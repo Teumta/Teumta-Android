@@ -1,6 +1,7 @@
 package com.teumta.app.ui
 
 import com.teumta.app.domain.model.DayType
+import com.teumta.app.domain.model.TimetableSource
 import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
@@ -29,4 +30,17 @@ fun formatServiceDay(date: LocalDate, dayType: DayType): String {
     val weekday = date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.KOREAN)
     val type = if (dayType == DayType.WEEKDAY) "평일" else "휴일"
     return "${date.monthValue}월 ${date.dayOfMonth}일 ($weekday) · $type 시간표"
+}
+
+// 어떤 시간표로 계산했는지. 예: "서버 시간표 · 2026년 11월 6일 기준".
+// 날짜 모양이 예상과 다르면(서버가 바뀌었을 때) 받은 글자를 그대로 보여 준다
+fun formatTimetableNote(source: TimetableSource, baseDate: String): String {
+    val name = when (source) {
+        TimetableSource.SERVER -> "서버 시간표"
+        TimetableSource.BUNDLED -> "앱 안 시간표(서버에 연결하지 못했어요)"
+    }
+    val date = runCatching { LocalDate.parse(baseDate) }
+        .map { "${it.year}년 ${it.monthValue}월 ${it.dayOfMonth}일" }
+        .getOrDefault(baseDate)
+    return "$name · $date 기준"
 }

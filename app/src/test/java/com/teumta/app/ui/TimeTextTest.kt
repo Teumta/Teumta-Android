@@ -1,6 +1,7 @@
 package com.teumta.app.ui
 
 import com.teumta.app.domain.model.DayType
+import com.teumta.app.domain.model.TimetableSource
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.time.LocalDate
@@ -19,6 +20,14 @@ class TimeTextTest {
         assertEquals("36분", formatDuration(36 * 60 + 30))
         assertEquals("1시간", formatDuration(3600))
         assertEquals("1시간 30분", formatDuration(90 * 60))
+    }
+
+    @Test
+    fun 어떤_시간표로_계산했는지() {
+        assertEquals("서버 시간표 · 2026년 11월 6일 기준", formatTimetableNote(TimetableSource.SERVER, "2026-11-06"))
+        assertEquals("앱 안 시간표(서버에 연결하지 못했어요) · 2026년 11월 6일 기준", formatTimetableNote(TimetableSource.BUNDLED, "2026-11-06"))
+        // 날짜 모양이 다르면 그대로
+        assertEquals("서버 시간표 · 20261106 기준", formatTimetableNote(TimetableSource.SERVER, "20261106"))
     }
 
     @Test

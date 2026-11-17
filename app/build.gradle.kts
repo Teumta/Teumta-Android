@@ -29,6 +29,13 @@ android {
         versionName = "0.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // 시간표 서버 주소. 기본값은 개발용으로, 에뮬레이터(기기)의 localhost를 내 컴퓨터의 서버로 잇는다.
+        // 쓰기 전에 한 번: adb reverse tcp:8080 tcp:8080
+        // (Android 17부터 앱이 10.0.2.2 같은 로컬 네트워크 주소에 붙으려면 권한이 필요해서 localhost로 잇는다)
+        // 배포한 서버를 쓰려면 gradle.properties나 명령줄(-Pteumta.apiBaseUrl=https://...)로 바꾼다
+        val apiBaseUrl = providers.gradleProperty("teumta.apiBaseUrl").getOrElse("http://localhost:8080/")
+        buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
     }
 
     signingConfigs {
@@ -80,8 +87,12 @@ dependencies {
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.kotlinx.serialization)
+    implementation(libs.okhttp)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.okhttp.mockwebserver)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)

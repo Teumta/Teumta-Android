@@ -34,6 +34,7 @@ import com.teumta.app.domain.Journey
 import com.teumta.app.ui.formatClock
 import com.teumta.app.ui.formatDuration
 import com.teumta.app.ui.formatServiceDay
+import com.teumta.app.ui.formatTimetableNote
 
 @Composable
 fun ResultRoute(
@@ -60,6 +61,12 @@ fun ResultScreen(state: ResultUiState, onBack: () -> Unit, onNextDay: () -> Unit
                         is DepartureResult.Failure -> FailureContent(result.reason, onNextDay)
                     }
                     OutlinedButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) { Text("다시 입력") }
+                    // 서버에 못 붙어 앱 안 시간표로 계산했으면 그렇다고 알려 준다
+                    Text(
+                        text = formatTimetableNote(state.timetableSource, state.baseDate),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
         }

@@ -62,6 +62,8 @@ class ResultViewModel @Inject constructor(
                 result = result,
                 stationNames = timetable.stations.associate { it.id to it.name },
                 stayMin = input.stayMin,
+                timetableSource = timetable.source,
+                baseDate = timetable.baseDate,
             )
         }
     }
