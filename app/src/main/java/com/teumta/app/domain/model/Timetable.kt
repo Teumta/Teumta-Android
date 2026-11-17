@@ -7,7 +7,17 @@ data class Timetable(
     val baseDate: String,
     val stations: List<Station>,
     val trains: List<Train>,
+    // 어디서 받은 시간표인지. 결과 화면에 기준일과 함께 보여 준다
+    val source: TimetableSource = TimetableSource.BUNDLED,
 )
+
+enum class TimetableSource {
+    // 서버에서 방금 받은 시간표
+    SERVER,
+
+    // 앱 안(assets)에 들어 있는 시간표. 서버에 못 붙었을 때 쓴다
+    BUNDLED,
+}
 
 // 서버 GET /api/stations의 칸 이름과 같아서 그대로 읽힌다
 @Serializable
