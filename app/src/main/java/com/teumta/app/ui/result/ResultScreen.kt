@@ -30,6 +30,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teumta.app.domain.DeparturePlan
 import com.teumta.app.domain.DepartureResult
 import com.teumta.app.domain.FailReason
+import com.teumta.app.domain.Journey
 import com.teumta.app.ui.formatClock
 import com.teumta.app.ui.formatDuration
 import com.teumta.app.ui.formatServiceDay
@@ -78,7 +79,7 @@ private fun SuccessContent(state: ResultUiState.Ready, result: DepartureResult.S
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary,
         )
-        Text("${from}에서 ${plan.first.train.headsign}행 열차를 타세요", style = MaterialTheme.typography.bodyLarge)
+        Text("${from}에서 ${plan.first.rides.first().train.headsign}행 열차를 타세요", style = MaterialTheme.typography.bodyLarge)
         state.day.nowSec?.let { now ->
             Text("지금부터 ${formatDuration(plan.departSec - now)} 뒤", style = MaterialTheme.typography.bodyMedium)
         }
@@ -104,20 +105,28 @@ private fun SuccessContent(state: ResultUiState.Ready, result: DepartureResult.S
     }
 }
 
-// 출발역 승차 → 경유역 하차 → 머무름 → 경유역 승차 → 도착역 하차
+// 출발역 승차 → (갈아타기) → 경유역 하차 → 머무름 → 경유역 승차 → (갈아타기) → 도착역 하차
 @Composable
 private fun Timeline(state: ResultUiState.Ready, plan: DeparturePlan) {
     val via = state.nameOf(plan.first.toId)
-    TimelineRow(formatClock(plan.first.departSec), "${state.nameOf(plan.first.fromId)} 승차", "${plan.first.train.headsign}행")
-    TimelineRow(formatClock(plan.first.arriveSec), "$via 하차", null)
+    JourneyRows(state, plan.first, lastLabel = "$via 하차")
     TimelineRow(
         time = "",
         title = "${via}에서 ${formatDuration(plan.staySec)} 머무름",
         detail = "원한 시간 ${formatDuration(state.stayMin * 60)} · 내리고 타는 여유 2분은 뺐어요",
         highlight = true,
     )
-    TimelineRow(formatClock(plan.second.departSec), "$via 승차", "${plan.second.train.headsign}행")
-    TimelineRow(formatClock(plan.second.arriveSec), "${state.nameOf(plan.second.toId)} 도착", null)
+    JourneyRows(state, plan.second, lastLabel = "${state.nameOf(plan.second.toId)} 도착")
+}
+
+// 열차마다 승차 한 줄, 하차 한 줄. 갈아타면 열차 수만큼 줄이 늘어난다
+@Composable
+private fun JourneyRows(state: ResultUiState.Ready, journey: Journey, lastLabel: String) {
+    journey.rides.forEachIndexed { i, ride ->
+        TimelineRow(formatClock(ride.departSec), "${state.nameOf(ride.fromId)} 승차", "${ride.train.headsign}행")
+        val alightLabel = if (i == journey.rides.lastIndex) lastLabel else "${state.nameOf(ride.toId)}에서 갈아타기"
+        TimelineRow(formatClock(ride.arriveSec), alightLabel, null)
+    }
 }
 
 @Composable
