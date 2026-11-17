@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.teumta.app.data.LastRouteStore
 import com.teumta.app.data.TimetableRepository
 import com.teumta.app.domain.ServiceTime
+import com.teumta.app.domain.StationTree
 import com.teumta.app.domain.model.LastRoute
 import com.teumta.app.domain.model.Station
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -31,14 +32,14 @@ class InputViewModel @Inject constructor(
         // 계산 버튼을 눌렀을 때 기다리지 않게, 역을 고르는 동안 열차 시간표를 미리 읽어 둔다
         viewModelScope.launch { repository.getTimetable() }
         viewModelScope.launch {
-            val stations = repository.getStations().sortedBy { it.order }
+            val tree = StationTree(repository.getStations())
             // 지난번에 계산한 경로가 있으면 그 값으로 채우고, 없거나 쓸 수 없으면 예시 경로로 채운다
             val saved = lastRouteStore.lastRoute.first()
-            val selection = saved?.let { restoreSelection(stations, it) } ?: exampleSelection(stations)
+            val selection = saved?.let { restoreSelection(tree, it) } ?: exampleSelection(tree)
             _uiState.update {
                 it.copy(
                     isLoading = false,
-                    stations = stations,
+                    sections = stationSections(tree),
                     selection = selection,
                     stayMin = saved?.stayMin?.takeIf { min -> min in STAY_OPTIONS } ?: it.stayMin,
                 )
@@ -69,9 +70,9 @@ class InputViewModel @Inject constructor(
     }
 
     // 처음 연 사람(심사자 포함)이 바로 계산해 볼 수 있게 예시 경로를 채워 둔다
-    private fun exampleSelection(stations: List<Station>): RouteSelection {
-        val byName = stations.associateBy { it.name }
-        return RouteSelection(from = byName["서울역"], to = byName["인천"], via = byName["구로"])
+    private fun exampleSelection(tree: StationTree): RouteSelection {
+        val byName = tree.stations.associateBy { it.name }
+        return RouteSelection(tree, from = byName["서울역"], to = byName["인천"], via = byName["구로"])
     }
 
     companion object {

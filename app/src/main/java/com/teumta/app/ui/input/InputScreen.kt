@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -32,6 +33,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -39,11 +41,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.teumta.app.domain.StationTree
 import com.teumta.app.domain.model.Station
 import com.teumta.app.ui.theme.TeumtaTheme
 import java.time.LocalTime
@@ -103,17 +108,7 @@ fun InputScreen(
             if (state.isLoading) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             } else {
-                LazyColumn(Modifier.fillMaxSize()) {
-                    itemsIndexed(state.stations, key = { _, s -> s.id }) { index, station ->
-                        StationRow(
-                            station = station,
-                            selection = state.selection,
-                            isFirst = index == 0,
-                            isLast = index == state.stations.lastIndex,
-                            onClick = { onStationTap(station) },
-                        )
-                    }
-                }
+                StationList(state, onStationTap)
             }
         }
     }
@@ -137,6 +132,47 @@ private fun guideText(selection: RouteSelection): String = when (selection.step)
     SelectStep.DONE -> "도착 시각과 머무를 시간을 정해 주세요"
 }
 
+// 출발·도착을 고를 때는 노선도 전체(갈림길에서 끊은 토막들)를, 둘 다 고른 뒤에는 두 역을 잇는 길만 보여 준다.
+// 길만 남기면 1호선이 갈라져 있어도 경유역 후보가 한 줄로 이어져 보인다
+@Composable
+private fun StationList(state: InputUiState, onStationTap: (Station) -> Unit) {
+    val path = state.selection.path
+    val sections = if (path != null) listOf(StationSection(branchFrom = null, stations = path)) else state.sections
+    val listState = rememberLazyListState()
+    // 노선도 전체와 길을 오갈 때 목록 맨 위부터 보여 준다
+    LaunchedEffect(path != null) { listState.scrollToItem(0) }
+
+    LazyColumn(Modifier.fillMaxSize(), state = listState) {
+        sections.forEach { section ->
+            item(key = "title-${section.stations.first().id}") { SectionTitle(section.title) }
+            itemsIndexed(section.stations, key = { _, s -> s.id }) { index, station ->
+                StationRow(
+                    station = station,
+                    selection = state.selection,
+                    isFirst = index == 0,
+                    isLast = index == section.stations.lastIndex,
+                    onPath = path != null,
+                    onClick = { onStationTap(station) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionTitle(text: String) {
+    Text(
+        text = text,
+        // 화면 읽기(TalkBack)에서 제목으로 건너뛸 수 있게
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 4.dp)
+            .semantics { heading() },
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
+    )
+}
+
 // 노선도 한 줄: 왼쪽에 선과 점, 가운데 역 이름, 오른쪽에 출발·경유·도착 표시
 @Composable
 private fun StationRow(
@@ -144,15 +180,14 @@ private fun StationRow(
     selection: RouteSelection,
     isFirst: Boolean,
     isLast: Boolean,
+    // 출발역~도착역 길을 보여 주는 중이면 선을 진하게
+    onPath: Boolean,
     onClick: () -> Unit,
 ) {
     val role = selection.roleOf(station)
     val enabled = selection.isEnabled(station)
-    val range = selection.range
     val colors = MaterialTheme.colorScheme
-    // 출발역~도착역 사이 선만 진하게
-    val upColor = if (range != null && station.order in range && station.order != range.first) colors.primary else colors.outlineVariant
-    val downColor = if (range != null && station.order in range && station.order != range.last) colors.primary else colors.outlineVariant
+    val lineColor = if (onPath) colors.primary else colors.outlineVariant
     val dotColor = when {
         role != null -> colors.primary
         enabled -> colors.outline
@@ -171,8 +206,8 @@ private fun StationRow(
             val x = size.width / 2
             val y = size.height / 2
             val stroke = 4.dp.toPx()
-            if (!isFirst) drawLine(upColor, Offset(x, 0f), Offset(x, y), stroke)
-            if (!isLast) drawLine(downColor, Offset(x, y), Offset(x, size.height), stroke)
+            if (!isFirst) drawLine(lineColor, Offset(x, 0f), Offset(x, y), stroke)
+            if (!isLast) drawLine(lineColor, Offset(x, y), Offset(x, size.height), stroke)
             drawCircle(dotColor, radius = (if (role != null) 9.dp else 5.dp).toPx(), center = Offset(x, y))
         }
         Spacer(Modifier.width(16.dp))
@@ -262,13 +297,17 @@ private fun ArriveByDialog(initial: LocalTime, onConfirm: (LocalTime) -> Unit, o
 @Preview(showBackground = true)
 @Composable
 private fun InputScreenPreview() {
-    val stations = listOf("서울역", "남영", "용산", "노량진", "대방").mapIndexed { i, name -> Station("S$i", name, i + 1) }
+    // 한 줄로 이어진 다섯 역 (앞 역을 parent로)
+    val stations = listOf("서울역", "남영", "용산", "노량진", "대방").mapIndexed { i, name ->
+        Station("S$i", name, i + 1, parentId = if (i == 0) null else "S${i - 1}")
+    }
+    val tree = StationTree(stations)
     TeumtaTheme {
         InputScreen(
             state = InputUiState(
                 isLoading = false,
-                stations = stations,
-                selection = RouteSelection(from = stations[0], to = stations[4], via = stations[2]),
+                sections = stationSections(tree),
+                selection = RouteSelection(tree, from = stations[0], to = stations[4], via = stations[2]),
                 arriveBy = LocalTime.of(21, 0),
             ),
             onStationTap = {},

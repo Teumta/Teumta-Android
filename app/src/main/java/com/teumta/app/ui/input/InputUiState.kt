@@ -1,14 +1,15 @@
 package com.teumta.app.ui.input
 
 import com.teumta.app.domain.ServiceTime
+import com.teumta.app.domain.StationTree
 import com.teumta.app.domain.model.LastRoute
-import com.teumta.app.domain.model.Station
 import java.time.LocalTime
 import java.time.ZonedDateTime
 
 data class InputUiState(
     val isLoading: Boolean = true,
-    val stations: List<Station> = emptyList(),
+    // 노선도 전체를 갈림길에서 끊은 토막들. 출발·도착을 고를 때 보여 준다
+    val sections: List<StationSection> = emptyList(),
     val selection: RouteSelection = RouteSelection(),
     val arriveBy: LocalTime,
     val stayMin: Int = 30,
@@ -43,10 +44,9 @@ fun defaultArriveBy(now: ZonedDateTime): LocalTime {
 
 // 저장해 둔 경로를 지금 역 목록으로 되살린다. 역이 없어졌거나 선택 규칙에 맞지 않으면 null(예시 경로를 쓴다).
 // 출발 → 도착 → 경유 순서로 tap해서 RouteSelection의 규칙을 그대로 다시 쓴다
-fun restoreSelection(stations: List<Station>, saved: LastRoute): RouteSelection? {
-    val byId = stations.associateBy { it.id }
-    val from = byId[saved.fromId] ?: return null
-    val to = byId[saved.toId] ?: return null
-    val via = byId[saved.viaId] ?: return null
-    return RouteSelection().tap(from).tap(to).tap(via).takeIf { it.isComplete }
+fun restoreSelection(tree: StationTree, saved: LastRoute): RouteSelection? {
+    val from = tree.find(saved.fromId) ?: return null
+    val to = tree.find(saved.toId) ?: return null
+    val via = tree.find(saved.viaId) ?: return null
+    return RouteSelection(tree).tap(from).tap(to).tap(via).takeIf { it.isComplete }
 }

@@ -9,7 +9,15 @@ data class StationTree(val stations: List<Station>) {
 
     private val byId: Map<String, Station> = stations.associateBy { it.id }
 
+    // parentId -> 그 역에서 연천과 먼 쪽으로 이웃한 역들. 갈라지는 역(구로·금천구청·병점)은 둘이다
+    private val children: Map<String?, List<Station>> = stations.groupBy { it.parentId }
+
+    // 나무의 맨 위(parent가 없는 역). 1호선은 연천 하나다
+    val roots: List<Station> get() = children[null].orEmpty()
+
     fun find(id: String): Station? = byId[id]
+
+    fun childrenOf(id: String): List<Station> = children[id].orEmpty()
 
     // from에서 to까지 지나는 역들. 양 끝을 넣고 from부터 순서대로. 어느 한쪽이 없으면 빈 목록
     fun path(fromId: String, toId: String): List<Station> {
