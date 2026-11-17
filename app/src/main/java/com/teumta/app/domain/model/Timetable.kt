@@ -16,6 +16,8 @@ data class Station(
     val name: String,
     // 서울역 1 ~ 인천 29
     val order: Int,
+    // 이 역에서 다른 열차로 갈아탈 때 걸리는 시간(초). 없으면 2분으로 본다 (예: 구로 240초)
+    val transferSec: Int? = null,
 )
 
 @Serializable
