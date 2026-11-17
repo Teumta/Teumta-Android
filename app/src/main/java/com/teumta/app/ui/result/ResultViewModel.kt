@@ -11,10 +11,12 @@ import com.teumta.app.domain.ServiceTime
 import com.teumta.app.domain.chooseCalculationDay
 import com.teumta.app.ui.navigation.ResultDestination
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.LocalTime
 import javax.inject.Inject
 
@@ -53,9 +55,11 @@ class ResultViewModel @Inject constructor(
                 stayMin = input.stayMin,
                 nowSec = day.nowSec,
             )
+            // 102개 역 시간표는 구간이 수만 개라 계산을 화면(Main) 스레드 밖에서 한다
+            val result = withContext(Dispatchers.Default) { DepartureCalculator(timetable).calculate(request) }
             _uiState.value = ResultUiState.Ready(
                 day = day,
-                result = DepartureCalculator(timetable).calculate(request),
+                result = result,
                 stationNames = timetable.stations.associate { it.id to it.name },
                 stayMin = input.stayMin,
             )

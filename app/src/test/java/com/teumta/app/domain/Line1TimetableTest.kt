@@ -1,23 +1,19 @@
 package com.teumta.app.domain
 
-import com.teumta.app.data.TimetableParser
+import com.teumta.app.data.Line1Assets
 import com.teumta.app.domain.model.DayType
 import com.teumta.app.domain.model.Timetable
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.File
 
-/*1호선 102개 역 시간표로 계산한다. test/resources/line1에는 서버 응답(GET /api/stations, GET /api/trains)을 그대로 저장해 두었다.
+/*1호선 102개 역 시간표로 계산한다. 앱 안 assets/line1에는 서버 응답(GET /api/stations, GET /api/trains)을 그대로 저장해 두었다.
 1호선은 구로·금천구청·병점에서 갈라지고 급행도 있어서, 갈아타기를 해야 하는 경우가 생긴다.
 기대값은 작업 폴더에서 모든 출발 열차를 하나씩 대 보는 별도 계산과 맞춰 확인했다.*/
 
 class Line1TimetableTest {
 
-    private val timetable: Timetable = TimetableParser.parseServer(
-        stationsText = read("stations.json"),
-        trainsTexts = listOf(read("trains-weekday.json"), read("trains-holiday.json")),
-    )
+    private val timetable: Timetable = Line1Assets.timetable
     private val calculator = DepartureCalculator(timetable)
     private val idByName = timetable.stations.associate { it.name to it.id }
     private val nameById = timetable.stations.associate { it.id to it.name }
@@ -27,6 +23,8 @@ class Line1TimetableTest {
         assertEquals(102, timetable.stations.size)
         assertEquals(1574, timetable.trains.size)
         assertEquals(240, timetable.stations.single { it.name == "구로" }.transferSec)
+        // 광명은 금천구청에서 갈라진다
+        assertEquals(idByName["금천구청"], timetable.stations.single { it.name == "광명" }.parentId)
     }
 
     @Test
@@ -67,15 +65,35 @@ class Line1TimetableTest {
         assertEquals(sec("12:02"), result.alternative?.departSec)
     }
 
+    @Test
+    fun 평일_구로에서_부평_30분_들렀다_자정_넘어_00시30분까지_인천() {
+        val result = success(DayType.WEEKDAY, "구로", "부평", "인천", arriveBy = sec("24:30"), stayMin = 30)
+
+        assertEquals(sec("23:05:30"), result.plan.departSec)
+        assertEquals(sec("23:59"), result.plan.second.departSec)
+        assertEquals(sec("24:21"), result.plan.second.arriveSec)
+    }
+
+    @Test
+    fun 첫차_전_도착_시각과_너무_긴_머무름은_실패() {
+        assertEquals(
+            DepartureResult.Failure(FailReason.NO_TRAIN_BEFORE_ARRIVAL),
+            calculate(DayType.WEEKDAY, "서울역", "구로", "인천", arriveBy = sec("05:30"), stayMin = 30),
+        )
+        assertEquals(
+            DepartureResult.Failure(FailReason.STAY_TOO_LONG),
+            calculate(DayType.WEEKDAY, "서울역", "구로", "인천", arriveBy = sec("07:00"), stayMin = 180),
+        )
+    }
+
+    private fun calculate(day: DayType, from: String, via: String, to: String, arriveBy: Int, stayMin: Int): DepartureResult =
+        calculator.calculate(DepartureRequest(idByName.getValue(from), idByName.getValue(via), idByName.getValue(to), day, arriveBy, stayMin))
+
     private fun success(day: DayType, from: String, via: String, to: String, arriveBy: Int, stayMin: Int): DepartureResult.Success {
-        val request = DepartureRequest(idByName.getValue(from), idByName.getValue(via), idByName.getValue(to), day, arriveBy, stayMin)
-        val result = calculator.calculate(request)
+        val result = calculate(day, from, via, to, arriveBy, stayMin)
         assertTrue("성공해야 하는데 $result", result is DepartureResult.Success)
         return result as DepartureResult.Success
     }
-
-    // 단위 테스트는 app 모듈 폴더에서 실행돼서 상대 경로로 읽는다
-    private fun read(name: String): String = File("src/test/resources/line1/$name").readText()
 
     private fun sec(time: String): Int {
         val p = time.split(":").map { it.toInt() }
