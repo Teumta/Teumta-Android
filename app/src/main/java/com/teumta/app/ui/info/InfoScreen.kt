@@ -74,6 +74,7 @@ fun InfoScreen(onBack: () -> Unit) {
                     Text("${oss.owner} · ${oss.license}", style = MaterialTheme.typography.bodySmall)
                 }
                 LinkButton("Apache License 2.0 전문") { open(APACHE_LICENSE_URL) }
+                LinkButton("SIL Open Font License 1.1 전문") { open(OFL_LICENSE_URL) }
             }
 
             Text(
