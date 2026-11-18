@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Figma 02 아이콘 'home' (24 격자, 선 2, 둥근 끝). Icon(tint)로 색을 바꿔요. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:pathData="M4 10.5L12 4L20 10.5V19.5C20 20.05 19.55 20.5 19 20.5H15V14.5H9V20.5H5C4.45 20.5 4 20.05 4 19.5Z"
+        android:fillColor="#00000000"
+        android:strokeColor="#FF1B2232"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>

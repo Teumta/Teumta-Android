@@ -23,7 +23,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.teumta.app.BuildConfig
-import com.teumta.app.ui.theme.TeumtaTheme
+import com.teumta.core.designsystem.theme.TeumtaTheme
 
 @Composable
 fun InfoScreen(onBack: () -> Unit) {
@@ -74,6 +74,7 @@ fun InfoScreen(onBack: () -> Unit) {
                     Text("${oss.owner} · ${oss.license}", style = MaterialTheme.typography.bodySmall)
                 }
                 LinkButton("Apache License 2.0 전문") { open(APACHE_LICENSE_URL) }
+                LinkButton("SIL Open Font License 1.1 전문") { open(OFL_LICENSE_URL) }
             }
 
             Text(

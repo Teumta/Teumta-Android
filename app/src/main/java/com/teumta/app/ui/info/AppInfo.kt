@@ -15,6 +15,8 @@ data class OpenSourceLicense(val name: String, val owner: String, val license: S
 val OPEN_SOURCE_LICENSES = listOf(
     OpenSourceLicense("AndroidX (Core, Activity, Compose, Material 3, Lifecycle, Navigation)", "The Android Open Source Project", "Apache License 2.0"),
     OpenSourceLicense("Kotlin, kotlinx.coroutines, kotlinx.serialization", "JetBrains s.r.o.", "Apache License 2.0"),
+    OpenSourceLicense("Pretendard (글꼴)", "Kil Hyung-jin", "SIL Open Font License 1.1"),
 )
 
 const val APACHE_LICENSE_URL = "https://www.apache.org/licenses/LICENSE-2.0"
+const val OFL_LICENSE_URL = "https://openfontlicense.org/open-font-license-official-text/"
