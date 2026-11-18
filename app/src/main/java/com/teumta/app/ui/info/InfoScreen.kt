@@ -23,7 +23,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.teumta.app.BuildConfig
-import com.teumta.app.ui.theme.TeumtaTheme
+import com.teumta.core.designsystem.theme.TeumtaTheme
 
 @Composable
 fun InfoScreen(onBack: () -> Unit) {

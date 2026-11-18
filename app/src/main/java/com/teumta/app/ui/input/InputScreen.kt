@@ -50,7 +50,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teumta.app.domain.StationTree
 import com.teumta.app.domain.model.Station
-import com.teumta.app.ui.theme.TeumtaTheme
+import com.teumta.core.designsystem.theme.TeumtaTheme
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
