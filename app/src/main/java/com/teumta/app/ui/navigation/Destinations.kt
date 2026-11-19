@@ -20,6 +20,9 @@ object LoginDestination
 object SignupDestination
 
 @Serializable
+object CommuteDestination
+
+@Serializable
 data class ResultDestination(
     val fromId: String,
     val viaId: String,

@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.teumta.app.ui.account.CommuteRoute
 import com.teumta.app.ui.account.LoginRoute
 import com.teumta.app.ui.account.SettingsRoute
 import com.teumta.app.ui.account.SignupRoute
@@ -34,6 +35,13 @@ fun TeumtaNavHost() {
                 onLoginClick = { navController.navigate(LoginDestination) },
                 onSignupClick = { navController.navigate(SignupDestination) },
                 onInfoClick = { navController.navigate(InfoDestination) },
+                onCommuteClick = { navController.navigate(CommuteDestination) },
+            )
+        }
+        composable<CommuteDestination> {
+            CommuteRoute(
+                onBack = { navController.popBackStack() },
+                onDone = { navController.popBackStack() },
             )
         }
         composable<LoginDestination> {
