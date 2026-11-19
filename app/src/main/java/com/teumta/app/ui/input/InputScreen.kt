@@ -1,5 +1,6 @@
 package com.teumta.app.ui.input
 
+import android.widget.Toast
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -42,6 +43,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -51,6 +54,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teumta.app.domain.StationTree
 import com.teumta.app.domain.model.Station
+import com.teumta.app.ui.info.AppInfo
 import com.teumta.core.designsystem.theme.TeumtaTheme
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -71,6 +75,7 @@ fun InputRoute(
         onCalculate = { viewModel.onCalculate()?.let(onCalculate) },
         onSettingsClick = onSettingsClick,
         onCommute = viewModel::onCommute,
+        onPolicyNoticeSeen = viewModel::onPolicyNoticeSeen,
     )
 }
 
@@ -83,6 +88,7 @@ fun InputScreen(
     onCalculate: () -> Unit,
     onSettingsClick: () -> Unit,
     onCommute: (CommuteDirection) -> Unit,
+    onPolicyNoticeSeen: () -> Unit,
 ) {
     // 대화상자를 열었는지는 화면만 알면 되는 값이라 ViewModel에 두지 않는다
     var showTimePicker by rememberSaveable { mutableStateOf(false) }
@@ -117,6 +123,10 @@ fun InputScreen(
         }
     }
 
+    if (state.showPolicyNotice) {
+        PolicyNoticeDialog(onSeen = onPolicyNoticeSeen)
+    }
+
     if (showTimePicker) {
         ArriveByDialog(
             initial = state.arriveBy,
@@ -134,6 +144,32 @@ private fun guideText(selection: RouteSelection): String = when (selection.step)
     SelectStep.TO -> "도착역을 눌러 주세요"
     SelectStep.VIA -> if (selection.hasViaCandidate) "들를 역을 눌러 주세요" else "사이에 들를 역이 없어요. 도착역을 다시 골라 주세요"
     SelectStep.DONE -> "도착 시각과 머무를 시간을 정해 주세요"
+}
+
+// 개인정보처리방침이 바뀌었다는 안내. 0.2.0 방침에 "앱에서도 알려요"라고 약속한 것을 지킨다
+@Composable
+private fun PolicyNoticeDialog(onSeen: () -> Unit) {
+    val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current
+    AlertDialog(
+        onDismissRequest = onSeen,
+        title = { Text("개인정보처리방침이 바뀌어요") },
+        text = {
+            Text(
+                "${AppInfo.PRIVACY_EFFECTIVE_DATE}부터 시행해요. 회원가입·로그인이 생겨서, 가입하면 이메일과 집역·회사역을 " +
+                    "틈타 서버(호주)에 저장해요. 시간표도 서버에서 받아요. 로그인하지 않으면 계정 정보는 보내지 않아요.",
+            )
+        },
+        confirmButton = { TextButton(onClick = onSeen) { Text("확인") } },
+        dismissButton = {
+            TextButton(onClick = {
+                onSeen()
+                // 브라우저가 없으면 openUri가 예외를 던져 앱이 꺼진다(앱 정보 화면과 같은 처리)
+                runCatching { uriHandler.openUri(AppInfo.PRIVACY_URL) }
+                    .onFailure { Toast.makeText(context, "열 수 있는 앱이 없어요: ${AppInfo.PRIVACY_URL}", Toast.LENGTH_LONG).show() }
+            }) { Text("방침 보기") }
+        },
+    )
 }
 
 // 집역·회사역을 저장해 두었으면 한 번에 출발·도착을 채우는 버튼. 둘 중 하나라도 없으면 그리지 않는다
@@ -333,6 +369,7 @@ private fun InputScreenPreview() {
             onCalculate = {},
             onSettingsClick = {},
             onCommute = {},
+            onPolicyNoticeSeen = {},
         )
     }
 }

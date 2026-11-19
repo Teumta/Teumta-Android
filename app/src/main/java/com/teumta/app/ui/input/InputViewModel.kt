@@ -3,12 +3,14 @@ package com.teumta.app.ui.input
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.teumta.app.data.LastRouteStore
+import com.teumta.app.data.PolicyNoticeStore
 import com.teumta.app.data.TimetableRepository
 import com.teumta.app.data.account.AccountRepository
 import com.teumta.app.domain.ServiceTime
 import com.teumta.app.domain.StationTree
 import com.teumta.app.domain.model.LastRoute
 import com.teumta.app.domain.model.Station
+import com.teumta.app.ui.info.AppInfo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +28,7 @@ class InputViewModel @Inject constructor(
     private val repository: TimetableRepository,
     private val lastRouteStore: LastRouteStore,
     private val accountRepository: AccountRepository,
+    private val policyNoticeStore: PolicyNoticeStore,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(InputUiState(arriveBy = defaultArriveBy(ServiceTime.now())))
@@ -34,6 +37,10 @@ class InputViewModel @Inject constructor(
     init {
         // 계산 버튼을 눌렀을 때 기다리지 않게, 역을 고르는 동안 열차 시간표를 미리 읽어 둔다
         viewModelScope.launch { repository.getTimetable() }
+        viewModelScope.launch {
+            val seen = policyNoticeStore.seenVersion.first()
+            if (seen != AppInfo.PRIVACY_VERSION) _uiState.update { it.copy(showPolicyNotice = true) }
+        }
         viewModelScope.launch {
             accountRepository.isLoggedIn.collect { loggedIn -> if (loggedIn) loadCommute() }
         }
@@ -74,6 +81,12 @@ class InputViewModel @Inject constructor(
         } catch (e: Exception) {
             // 버튼을 보여 주지 않는다
         }
+    }
+
+    // 안내를 닫거나 방침을 열면 이 판은 다시 보여 주지 않는다
+    fun onPolicyNoticeSeen() {
+        _uiState.update { it.copy(showPolicyNotice = false) }
+        viewModelScope.launch { policyNoticeStore.markSeen(AppInfo.PRIVACY_VERSION) }
     }
 
     fun onCommute(direction: CommuteDirection) {
