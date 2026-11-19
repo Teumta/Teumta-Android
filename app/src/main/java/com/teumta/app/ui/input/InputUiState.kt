@@ -17,6 +17,8 @@ data class InputUiState(
     // 로그인해서 저장해 둔 집역·회사역. 둘 다 있을 때만 출근길·퇴근길 버튼을 보여 준다
     val home: Station? = null,
     val work: Station? = null,
+    // 바뀐 개인정보처리방침 안내를 아직 보지 않았으면 true(앱을 연 뒤 한 번 보여 준다)
+    val showPolicyNotice: Boolean = false,
 ) {
     val canCalculate: Boolean get() = selection.isComplete
 
