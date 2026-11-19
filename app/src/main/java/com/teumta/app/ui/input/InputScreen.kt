@@ -58,7 +58,7 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun InputRoute(
     onCalculate: (RouteInput) -> Unit,
-    onInfoClick: () -> Unit,
+    onSettingsClick: () -> Unit,
     viewModel: InputViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -68,7 +68,7 @@ fun InputRoute(
         onArriveByChange = viewModel::onArriveByChange,
         onStayChange = viewModel::onStayChange,
         onCalculate = { viewModel.onCalculate()?.let(onCalculate) },
-        onInfoClick = onInfoClick,
+        onSettingsClick = onSettingsClick,
     )
 }
 
@@ -79,7 +79,7 @@ fun InputScreen(
     onArriveByChange: (LocalTime) -> Unit,
     onStayChange: (Int) -> Unit,
     onCalculate: () -> Unit,
-    onInfoClick: () -> Unit,
+    onSettingsClick: () -> Unit,
 ) {
     // 대화상자를 열었는지는 화면만 알면 되는 값이라 ViewModel에 두지 않는다
     var showTimePicker by rememberSaveable { mutableStateOf(false) }
@@ -103,7 +103,7 @@ fun InputScreen(
                     Text("1호선 102개 역 · 급행 포함", style = MaterialTheme.typography.labelMedium)
                     Text(guideText(state.selection), style = MaterialTheme.typography.titleLarge)
                 }
-                TextButton(onClick = onInfoClick) { Text("앱 정보") }
+                TextButton(onClick = onSettingsClick) { Text("설정") }
             }
             if (state.isLoading) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
@@ -314,7 +314,7 @@ private fun InputScreenPreview() {
             onArriveByChange = {},
             onStayChange = {},
             onCalculate = {},
-            onInfoClick = {},
+            onSettingsClick = {},
         )
     }
 }
