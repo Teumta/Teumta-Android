@@ -3,6 +3,7 @@ package com.teumta.app.di
 import com.teumta.app.BuildConfig
 import com.teumta.app.data.TimetableApi
 import com.teumta.app.data.TimetableParser
+import com.teumta.app.data.account.AuthApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -40,4 +41,9 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideTimetableApi(retrofit: Retrofit): TimetableApi = retrofit.create(TimetableApi::class.java)
+
+    // 회원 API도 같은 서버라서 같은 Retrofit으로 만든다
+    @Provides
+    @Singleton
+    fun provideAuthApi(retrofit: Retrofit): AuthApi = retrofit.create(AuthApi::class.java)
 }
