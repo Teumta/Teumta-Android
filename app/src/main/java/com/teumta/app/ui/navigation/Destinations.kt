@@ -11,6 +11,15 @@ object InputDestination
 object InfoDestination
 
 @Serializable
+object SettingsDestination
+
+@Serializable
+object LoginDestination
+
+@Serializable
+object SignupDestination
+
+@Serializable
 data class ResultDestination(
     val fromId: String,
     val viaId: String,
