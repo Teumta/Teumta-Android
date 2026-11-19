@@ -13,8 +13,10 @@ object AppInfo {
 data class OpenSourceLicense(val name: String, val owner: String, val license: String)
 
 val OPEN_SOURCE_LICENSES = listOf(
-    OpenSourceLicense("AndroidX (Core, Activity, Compose, Material 3, Lifecycle, Navigation)", "The Android Open Source Project", "Apache License 2.0"),
+    OpenSourceLicense("AndroidX (Core, Activity, Compose, Material 3, Lifecycle, Navigation, DataStore, Hilt)", "The Android Open Source Project", "Apache License 2.0"),
     OpenSourceLicense("Kotlin, kotlinx.coroutines, kotlinx.serialization", "JetBrains s.r.o.", "Apache License 2.0"),
+    OpenSourceLicense("Dagger, Hilt", "The Dagger Authors", "Apache License 2.0"),
+    OpenSourceLicense("Retrofit, OkHttp", "Square, Inc.", "Apache License 2.0"),
     OpenSourceLicense("Pretendard (글꼴)", "Kil Hyung-jin", "SIL Open Font License 1.1"),
 )
 

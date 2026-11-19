@@ -64,7 +64,7 @@ fun InfoScreen(onBack: () -> Unit) {
             Section("문의와 개인정보") {
                 LinkButton("문의 메일 보내기 (${AppInfo.CONTACT_EMAIL})") { open("mailto:${AppInfo.CONTACT_EMAIL}") }
                 LinkButton("개인정보처리방침") { open(AppInfo.PRIVACY_URL) }
-                Text("틈타는 개인정보를 모으지 않아요. 계산은 모두 기기 안에서 해요.", style = MaterialTheme.typography.bodyMedium)
+                Text("열차 계산은 기기 안에서 해요. 회원가입하면 이메일과 집역·회사역을 서버에 저장하고, 탈퇴하면 바로 지워요.", style = MaterialTheme.typography.bodyMedium)
             }
 
             Section("오픈소스 라이선스") {
