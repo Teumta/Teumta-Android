@@ -6,6 +6,7 @@ import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
+import retrofit2.http.PUT
 
 // 회원 API(Teumta-Server의 /api/auth, /api/members/me).
 // 로그인이 필요한 API는 access token을 Authorization 헤더로 직접 받는다.
@@ -31,6 +32,13 @@ interface AuthApi {
 
     @DELETE("api/members/me")
     suspend fun withdraw(@Header("Authorization") authorization: String)
+
+    // 집역·회사역을 함께 바꾼다. null이면 그 역을 지운다. 바뀐 내 정보를 돌려준다
+    @PUT("api/members/me/stations")
+    suspend fun updateStations(
+        @Header("Authorization") authorization: String,
+        @Body request: UpdateStationsRequest,
+    ): MemberResponse
 }
 
 @Serializable
@@ -41,6 +49,10 @@ data class LoginRequest(val email: String, val password: String)
 
 @Serializable
 data class RefreshRequest(val refreshToken: String)
+
+// null도 그대로 보낸다(JSON의 null). 서버는 null을 "지우기"로 읽는다
+@Serializable
+data class UpdateStationsRequest(val homeStationId: String?, val workStationId: String?)
 
 // expiresIn(초)은 받지만 쓰지 않는다. 만료는 서버가 401로 알려 주면 그때 갱신한다
 @Serializable

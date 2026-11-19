@@ -4,11 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.teumta.app.data.LastRouteStore
 import com.teumta.app.data.TimetableRepository
+import com.teumta.app.data.account.AccountRepository
 import com.teumta.app.domain.ServiceTime
 import com.teumta.app.domain.StationTree
 import com.teumta.app.domain.model.LastRoute
 import com.teumta.app.domain.model.Station
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,6 +25,7 @@ import javax.inject.Inject
 class InputViewModel @Inject constructor(
     private val repository: TimetableRepository,
     private val lastRouteStore: LastRouteStore,
+    private val accountRepository: AccountRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(InputUiState(arriveBy = defaultArriveBy(ServiceTime.now())))
@@ -31,6 +34,9 @@ class InputViewModel @Inject constructor(
     init {
         // 계산 버튼을 눌렀을 때 기다리지 않게, 역을 고르는 동안 열차 시간표를 미리 읽어 둔다
         viewModelScope.launch { repository.getTimetable() }
+        viewModelScope.launch {
+            accountRepository.isLoggedIn.collect { loggedIn -> if (loggedIn) loadCommute() }
+        }
         viewModelScope.launch {
             val tree = StationTree(repository.getStations())
             // 지난번에 계산한 경로가 있으면 그 값으로 채우고, 없거나 쓸 수 없으면 예시 경로로 채운다
@@ -44,7 +50,34 @@ class InputViewModel @Inject constructor(
                     stayMin = saved?.stayMin?.takeIf { min -> min in STAY_OPTIONS } ?: it.stayMin,
                 )
             }
+            // 집역·회사역이 바뀔 때마다(설정에서 저장, 로그아웃) 역 ID를 역으로 바꿔 둔다
+            launch {
+                accountRepository.commute.collect { commute ->
+                    _uiState.update {
+                        it.copy(
+                            home = commute?.homeStationId?.let(tree::find),
+                            work = commute?.workStationId?.let(tree::find),
+                        )
+                    }
+                }
+            }
         }
+    }
+
+    // 로그인해 있으면 서버에서 집역·회사역을 받아 둔다(commute가 바뀐다).
+    // 인터넷이 없어도 계산에는 지장이 없어서, 실패하면 버튼만 안 보이고 넘어간다
+    private suspend fun loadCommute() {
+        try {
+            accountRepository.getMe()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // 버튼을 보여 주지 않는다
+        }
+    }
+
+    fun onCommute(direction: CommuteDirection) {
+        _uiState.update { state -> state.commuteSelection(direction)?.let { state.copy(selection = it) } ?: state }
     }
 
     fun onStationTap(station: Station) {

@@ -1,6 +1,9 @@
 package com.teumta.app.data.account
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -23,6 +26,11 @@ class AccountRepository @Inject constructor(
     // 토큰이 저장돼 있으면 로그인 상태. 로그아웃·탈퇴·갱신 실패로 지우면 바로 false가 된다
     val isLoggedIn: Flow<Boolean> = tokenStore.tokens.map { it != null }.distinctUntilChanged()
 
+    // 서버에서 마지막으로 받은 집역·회사역. 기기에는 저장하지 않고(개인정보처리방침: 서버에 저장) 앱이 켜져 있는 동안만 들고 있다.
+    // 내 정보를 받거나 저장하면 바뀌고, 로그아웃·탈퇴하면 null이 된다
+    private val _commute = MutableStateFlow<Commute?>(null)
+    val commute: StateFlow<Commute?> = _commute.asStateFlow()
+
     // 가입하면 서버가 바로 토큰을 준다(가입 = 로그인)
     suspend fun signup(email: String, password: String) {
         save(api.signup(SignupRequest(email.trim(), password)))
@@ -43,15 +51,29 @@ class AccountRepository @Inject constructor(
         } catch (e: HttpException) {
             // 서버 오류. 기기의 토큰만 지운다
         }
-        tokenStore.clear()
+        clearLocal()
     }
 
-    suspend fun getMe(): MemberResponse = authorized { api.getMe(it) }
+    suspend fun getMe(): MemberResponse = authorized { api.getMe(it) }.also(::remember)
+
+    // 집역·회사역을 서버에 저장한다. 같은 역이나 없는 역이면 서버가 400과 이유를 보낸다
+    suspend fun updateStations(homeStationId: String?, workStationId: String?): MemberResponse =
+        authorized { api.updateStations(it, UpdateStationsRequest(homeStationId, workStationId)) }.also(::remember)
 
     // 서버에서 지운 것이 확인된 뒤에만 기기의 토큰을 지운다. 실패하면 예외가 나가고 로그인 상태는 그대로다
     suspend fun withdraw() {
         authorized { api.withdraw(it) }
+        clearLocal()
+    }
+
+    private fun remember(me: MemberResponse) {
+        _commute.value = Commute(me.homeStationId, me.workStationId)
+    }
+
+    // 기기에서 로그아웃한다. 토큰과 들고 있던 집역·회사역을 함께 지운다
+    private suspend fun clearLocal() {
         tokenStore.clear()
+        _commute.value = null
     }
 
     private suspend fun save(response: TokenResponse) {
@@ -94,9 +116,12 @@ class AccountRepository @Inject constructor(
     }
 
     private suspend fun logoutLocally(): Nothing {
-        tokenStore.clear()
+        clearLocal()
         throw SessionExpiredException()
     }
 
     private fun bearer(accessToken: String) = "Bearer $accessToken"
 }
+
+// 회원의 집역·회사역 ID. 고르지 않았으면 null
+data class Commute(val homeStationId: String?, val workStationId: String?)

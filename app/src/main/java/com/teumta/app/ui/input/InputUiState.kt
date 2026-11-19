@@ -3,6 +3,7 @@ package com.teumta.app.ui.input
 import com.teumta.app.domain.ServiceTime
 import com.teumta.app.domain.StationTree
 import com.teumta.app.domain.model.LastRoute
+import com.teumta.app.domain.model.Station
 import java.time.LocalTime
 import java.time.ZonedDateTime
 
@@ -13,6 +14,9 @@ data class InputUiState(
     val selection: RouteSelection = RouteSelection(),
     val arriveBy: LocalTime,
     val stayMin: Int = 30,
+    // 로그인해서 저장해 둔 집역·회사역. 둘 다 있을 때만 출근길·퇴근길 버튼을 보여 준다
+    val home: Station? = null,
+    val work: Station? = null,
 ) {
     val canCalculate: Boolean get() = selection.isComplete
 
@@ -49,4 +53,17 @@ fun restoreSelection(tree: StationTree, saved: LastRoute): RouteSelection? {
     val to = tree.find(saved.toId) ?: return null
     val via = tree.find(saved.viaId) ?: return null
     return RouteSelection(tree).tap(from).tap(to).tap(via).takeIf { it.isComplete }
+}
+
+enum class CommuteDirection { TO_WORK, TO_HOME }
+
+// 출근길(집 → 회사)·퇴근길(회사 → 집) 버튼. 출발·도착을 채우고 들를 역은 새로 고르게 한다.
+// 들를 곳은 날마다 달라서 남겨 두지 않는다. 집역·회사역이 하나라도 없으면 null
+fun InputUiState.commuteSelection(direction: CommuteDirection): RouteSelection? {
+    val (from, to) = when (direction) {
+        CommuteDirection.TO_WORK -> home to work
+        CommuteDirection.TO_HOME -> work to home
+    }
+    if (from == null || to == null) return null
+    return RouteSelection(selection.tree).tap(from).tap(to)
 }

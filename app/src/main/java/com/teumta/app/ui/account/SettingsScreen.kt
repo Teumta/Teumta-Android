@@ -37,6 +37,7 @@ fun SettingsRoute(
     onLoginClick: () -> Unit,
     onSignupClick: () -> Unit,
     onInfoClick: () -> Unit,
+    onCommuteClick: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -48,6 +49,7 @@ fun SettingsRoute(
         onLogout = viewModel::onLogout,
         onWithdraw = viewModel::onWithdraw,
         onInfoClick = onInfoClick,
+        onCommuteClick = onCommuteClick,
     )
 }
 
@@ -60,6 +62,7 @@ fun SettingsScreen(
     onLogout: () -> Unit,
     onWithdraw: () -> Unit,
     onInfoClick: () -> Unit,
+    onCommuteClick: () -> Unit,
 ) {
     // 탈퇴는 되돌릴 수 없어서 한 번 더 묻는다. 대화상자를 열었는지는 화면만 알면 된다
     var confirmWithdraw by rememberSaveable { mutableStateOf(false) }
@@ -78,6 +81,8 @@ fun SettingsScreen(
             Section("계정") {
                 if (state.isLoggedIn) {
                     Text(state.email ?: "불러오는 중…", style = type.bodyStrong, color = colors.textPrimary)
+                    Text(commuteText(state.homeName, state.workName), style = type.body, color = colors.textSecondary)
+                    TeumtaButton(text = "집역·회사역 정하기", onClick = onCommuteClick, modifier = Modifier.fillMaxWidth())
                     TeumtaButton(
                         text = "로그아웃",
                         onClick = onLogout,
@@ -129,6 +134,9 @@ fun SettingsScreen(
     }
 }
 
+private fun commuteText(home: String?, work: String?): String =
+    if (home == null && work == null) "집역·회사역을 아직 정하지 않았어요." else "집 ${home ?: "-"} · 회사 ${work ?: "-"}"
+
 @Composable
 private fun Section(title: String, content: @Composable () -> Unit) {
     Card(Modifier.fillMaxWidth()) {
@@ -143,7 +151,7 @@ private fun Section(title: String, content: @Composable () -> Unit) {
 @Composable
 private fun SettingsLoggedOutPreview() {
     TeumtaTheme {
-        SettingsScreen(SettingsUiState(), onBack = {}, onLoginClick = {}, onSignupClick = {}, onLogout = {}, onWithdraw = {}, onInfoClick = {})
+        SettingsScreen(SettingsUiState(), onBack = {}, onLoginClick = {}, onSignupClick = {}, onLogout = {}, onWithdraw = {}, onInfoClick = {}, onCommuteClick = {})
     }
 }
 
@@ -152,8 +160,8 @@ private fun SettingsLoggedOutPreview() {
 private fun SettingsLoggedInPreview() {
     TeumtaTheme {
         SettingsScreen(
-            SettingsUiState(isLoggedIn = true, email = "me@example.com"),
-            onBack = {}, onLoginClick = {}, onSignupClick = {}, onLogout = {}, onWithdraw = {}, onInfoClick = {},
+            SettingsUiState(isLoggedIn = true, email = "me@example.com", homeName = "인천", workName = "서울역"),
+            onBack = {}, onLoginClick = {}, onSignupClick = {}, onLogout = {}, onWithdraw = {}, onInfoClick = {}, onCommuteClick = {},
         )
     }
 }

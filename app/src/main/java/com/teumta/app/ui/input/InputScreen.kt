@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -69,6 +70,7 @@ fun InputRoute(
         onStayChange = viewModel::onStayChange,
         onCalculate = { viewModel.onCalculate()?.let(onCalculate) },
         onSettingsClick = onSettingsClick,
+        onCommute = viewModel::onCommute,
     )
 }
 
@@ -80,6 +82,7 @@ fun InputScreen(
     onStayChange: (Int) -> Unit,
     onCalculate: () -> Unit,
     onSettingsClick: () -> Unit,
+    onCommute: (CommuteDirection) -> Unit,
 ) {
     // 대화상자를 열었는지는 화면만 알면 되는 값이라 ViewModel에 두지 않는다
     var showTimePicker by rememberSaveable { mutableStateOf(false) }
@@ -105,6 +108,7 @@ fun InputScreen(
                 }
                 TextButton(onClick = onSettingsClick) { Text("설정") }
             }
+            CommuteButtons(state.home, state.work, onCommute)
             if (state.isLoading) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             } else {
@@ -130,6 +134,19 @@ private fun guideText(selection: RouteSelection): String = when (selection.step)
     SelectStep.TO -> "도착역을 눌러 주세요"
     SelectStep.VIA -> if (selection.hasViaCandidate) "들를 역을 눌러 주세요" else "사이에 들를 역이 없어요. 도착역을 다시 골라 주세요"
     SelectStep.DONE -> "도착 시각과 머무를 시간을 정해 주세요"
+}
+
+// 집역·회사역을 저장해 두었으면 한 번에 출발·도착을 채우는 버튼. 둘 중 하나라도 없으면 그리지 않는다
+@Composable
+private fun CommuteButtons(home: Station?, work: Station?, onCommute: (CommuteDirection) -> Unit) {
+    if (home == null || work == null) return
+    FlowRow(
+        modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        AssistChip(onClick = { onCommute(CommuteDirection.TO_WORK) }, label = { Text("출근길 ${home.name} → ${work.name}") })
+        AssistChip(onClick = { onCommute(CommuteDirection.TO_HOME) }, label = { Text("퇴근길 ${work.name} → ${home.name}") })
+    }
 }
 
 // 출발·도착을 고를 때는 노선도 전체(갈림길에서 끊은 토막들)를, 둘 다 고른 뒤에는 두 역을 잇는 길만 보여 준다.
@@ -315,6 +332,7 @@ private fun InputScreenPreview() {
             onStayChange = {},
             onCalculate = {},
             onSettingsClick = {},
+            onCommute = {},
         )
     }
 }
