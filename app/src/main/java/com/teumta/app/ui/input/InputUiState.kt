@@ -1,6 +1,7 @@
 package com.teumta.app.ui.input
 
 import com.teumta.app.domain.ServiceTime
+import com.teumta.app.domain.StationTree
 import com.teumta.app.domain.model.LastRoute
 import com.teumta.app.domain.model.Station
 import java.time.LocalTime
@@ -8,24 +9,36 @@ import java.time.ZonedDateTime
 
 data class InputUiState(
     val isLoading: Boolean = true,
-    val stations: List<Station> = emptyList(),
+    // 노선도 전체를 갈림길에서 끊은 토막들. 출발·도착을 고르는 화면에 보여 준다
+    val sections: List<StationSection> = emptyList(),
     val selection: RouteSelection = RouteSelection(),
     val arriveBy: LocalTime,
     val stayMin: Int = 30,
+    // 로그인해서 저장해 둔 자주 쓰는 두 역. 둘 다 있을 때만 두 역 버튼을 보여 준다
+    val favoriteOrigin: Station? = null,
+    val favoriteDestination: Station? = null,
+    // 바뀐 개인정보처리방침 안내를 아직 보지 않았으면 true(앱을 연 뒤 한 번 보여 준다)
+    val showPolicyNotice: Boolean = false,
+    // 결과 화면에서 돌아오며 열어 달라고 한 것(도착 시각 시트, 들를 역 고르기). 연 뒤에는 null로 비운다
+    val pendingOpen: InputOpenRequest? = null,
 ) {
     val canCalculate: Boolean get() = selection.isComplete
 
     fun toRouteInput(): RouteInput? {
-        val s = selection
-        if (!s.isComplete) return null
-        return RouteInput(s.from!!.id, s.via!!.id, s.to!!.id, arriveBy, stayMin)
+        val from = selection.from ?: return null
+        val to = selection.to ?: return null
+        return RouteInput(from.id, selection.via?.id, to.id, arriveBy, stayMin)
     }
 }
+
+// 결과 화면의 "도착 시각 늦추기", "중간에 들렀다 가기"가 입력 화면에 열어 달라고 하는 것
+enum class InputOpenRequest { ARRIVE_SHEET, VIA_PICKER }
 
 // 계산 버튼을 눌렀을 때 결과 화면으로 넘길 값
 data class RouteInput(
     val fromId: String,
-    val viaId: String,
+    // null이면 들르지 않고 바로 간다
+    val viaId: String?,
     val toId: String,
     val arriveBy: LocalTime,
     val stayMin: Int,
@@ -41,12 +54,27 @@ fun defaultArriveBy(now: ZonedDateTime): LocalTime {
     return if (rounded.hour in 1..7) LocalTime.of(9, 0) else rounded
 }
 
-// 저장해 둔 경로를 지금 역 목록으로 되살린다. 역이 없어졌거나 선택 규칙에 맞지 않으면 null(예시 경로를 쓴다).
-// 출발 → 도착 → 경유 순서로 tap해서 RouteSelection의 규칙을 그대로 다시 쓴다
-fun restoreSelection(stations: List<Station>, saved: LastRoute): RouteSelection? {
-    val byId = stations.associateBy { it.id }
-    val from = byId[saved.fromId] ?: return null
-    val to = byId[saved.toId] ?: return null
-    val via = byId[saved.viaId] ?: return null
-    return RouteSelection().tap(from).tap(to).tap(via).takeIf { it.isComplete }
+// 저장해 둔 경로를 지금 역 목록으로 되살린다. 출발·도착 역이 없어졌으면 null(예시 경로를 쓴다).
+// 들를 역만 없어졌거나 두 역 사이가 아니면 들르지 않는 경로로 되살린다. 규칙은 RouteSelection.pick을 그대로 쓴다
+fun restoreSelection(tree: StationTree, saved: LastRoute): RouteSelection? {
+    val from = tree.find(saved.fromId) ?: return null
+    val to = tree.find(saved.toId) ?: return null
+    if (from == to) return null
+    val route = RouteSelection(tree, from = from, to = to)
+    val via = saved.viaId?.let(tree::find) ?: return route
+    return route.pick(StationRole.VIA, via)
+}
+
+enum class FavoriteDirection { FORWARD, BACKWARD }
+
+// 두 역 버튼. FORWARD는 출발역 → 도착역, BACKWARD는 도착역 → 출발역 방향으로 출발·도착을 채우고 들를 역은 비운다(바로 가기).
+// 들를 곳은 날마다 달라서 남겨 두지 않는다. 두 역 중 하나라도 없으면 null
+fun InputUiState.favoriteSelection(direction: FavoriteDirection): RouteSelection? {
+    val (from, to) = when (direction) {
+        FavoriteDirection.FORWARD -> favoriteOrigin to favoriteDestination
+        FavoriteDirection.BACKWARD -> favoriteDestination to favoriteOrigin
+    }
+    if (from == null || to == null) return null
+    if (from == to) return null
+    return RouteSelection(selection.tree, from = from, to = to)
 }

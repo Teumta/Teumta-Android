@@ -7,14 +7,18 @@ import androidx.navigation.toRoute
 import com.teumta.app.data.TimetableRepository
 import com.teumta.app.domain.DepartureCalculator
 import com.teumta.app.domain.DepartureRequest
+import com.teumta.app.domain.DepartureResult
+import com.teumta.app.domain.FailReason
 import com.teumta.app.domain.ServiceTime
 import com.teumta.app.domain.chooseCalculationDay
 import com.teumta.app.ui.navigation.ResultDestination
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.LocalTime
 import javax.inject.Inject
 
@@ -53,12 +57,29 @@ class ResultViewModel @Inject constructor(
                 stayMin = input.stayMin,
                 nowSec = day.nowSec,
             )
-            _uiState.value = ResultUiState.Ready(
-                day = day,
-                result = DepartureCalculator(timetable).calculate(request),
-                stationNames = timetable.stations.associate { it.id to it.name },
-                stayMin = input.stayMin,
-            )
+            // 102개 역 시간표는 구간이 수만 개라 계산을 화면(Main) 스레드 밖에서 한다
+            val ready = withContext(Dispatchers.Default) {
+                val calculator = DepartureCalculator(timetable)
+                val result = calculator.calculate(request)
+                // 머무를 시간이 모자라면 "머무를 시간 줄이기"에 쓸 최대 시간을, 들르는 길이 막히면 바로 가는 답을 함께 구한다
+                val tooLong = result == DepartureResult.Failure(FailReason.STAY_TOO_LONG)
+                val viaBlocked = input.viaId != null && result is DepartureResult.Failure && result.reason != FailReason.NO_TRAIN_BEFORE_ARRIVAL
+                ResultUiState.Ready(
+                    day = day,
+                    result = result,
+                    stationNames = timetable.stations.associate { it.id to it.name },
+                    fromId = input.fromId,
+                    viaId = input.viaId,
+                    toId = input.toId,
+                    arriveBySec = arriveBySec,
+                    stayMin = input.stayMin,
+                    maxStaySec = if (tooLong) calculator.maxStaySec(request) else null,
+                    directPlan = if (viaBlocked) (calculator.calculate(request.copy(viaId = null)) as? DepartureResult.Success)?.plan else null,
+                    timetableSource = timetable.source,
+                    baseDate = timetable.baseDate,
+                )
+            }
+            _uiState.value = ready
         }
     }
 }

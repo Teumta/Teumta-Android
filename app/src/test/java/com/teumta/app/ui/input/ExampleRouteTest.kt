@@ -1,6 +1,6 @@
 package com.teumta.app.ui.input
 
-import com.teumta.app.data.TimetableParser
+import com.teumta.app.data.Line1Assets
 import com.teumta.app.domain.DepartureCalculator
 import com.teumta.app.domain.DepartureRequest
 import com.teumta.app.domain.DepartureResult
@@ -8,13 +8,12 @@ import com.teumta.app.domain.ServiceTime
 import com.teumta.app.domain.chooseCalculationDay
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.File
 import java.time.ZonedDateTime
 
-// 심사자가 언제 앱을 열어도, 예시 경로와 기본값 그대로 계산하면 결과가 나와야 한다
+// 심사자가 언제 앱을 열어도, 예시 경로와 기본값 그대로 계산하면 결과가 나와야 한다(들를 역을 지워도)
 class ExampleRouteTest {
 
-    private val timetable = TimetableParser.parse(File("src/main/assets/timetable.json").readText())
+    private val timetable = Line1Assets.timetable
     private val calculator = DepartureCalculator(timetable)
     private val idByName = timetable.stations.associate { it.name to it.id }
 
@@ -34,6 +33,14 @@ class ExampleRouteTest {
                     ),
                 )
                 assertTrue("$now 에 열면 $arriveBy 까지 → $result", result is DepartureResult.Success)
+                // 들를 역을 지운 바로 가기(서울역 → 인천)도 결과가 나와야 한다
+                val direct = calculator.calculate(
+                    DepartureRequest(
+                        idByName.getValue("서울역"), null, idByName.getValue("인천"),
+                        calcDay.dayType, arriveBySec, stayMin = 30, nowSec = calcDay.nowSec,
+                    ),
+                )
+                assertTrue("바로 가기: $now 에 열면 $arriveBy 까지 → $direct", direct is DepartureResult.Success)
                 now = now.plusMinutes(10)
             }
         }

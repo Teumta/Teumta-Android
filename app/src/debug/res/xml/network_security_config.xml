@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- debug 빌드에만 들어간다. 내 컴퓨터의 서버(adb reverse로 이은 http://localhost:8080)에 붙으려고 암호화 안 된 연결을 localhost에만 허락한다 -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">localhost</domain>
+    </domain-config>
+</network-security-config>

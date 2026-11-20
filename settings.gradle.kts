@@ -24,3 +24,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "Teumta"
 include(":app")
+include(":core:designsystem")

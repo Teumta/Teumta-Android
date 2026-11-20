@@ -25,10 +25,18 @@ android {
         applicationId = "com.teumta.app"
         minSdk = 26
         targetSdk = 37
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 3
+        versionName = "0.3.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // 시간표 서버 주소. 기본값은 배포한 서버(EC2)다. debug·release 모두 같은 서버를 본다.
+        // 내 컴퓨터의 서버로 개발하려면 저장소 밖 ~/.gradle/gradle.properties에
+        //   teumta.apiBaseUrl=http://localhost:8080/
+        // 를 넣고 adb reverse tcp:8080 tcp:8080 을 한 번 실행한다(http localhost는 debug 빌드에서만 허락된다).
+        // (Android 17부터 앱이 10.0.2.2 같은 로컬 네트워크 주소에 붙으려면 권한이 필요해서 localhost로 잇는다)
+        val apiBaseUrl = providers.gradleProperty("teumta.apiBaseUrl").getOrElse("https://teumta.duckdns.org/")
+        buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
     }
 
     signingConfigs {
@@ -64,6 +72,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":core:designsystem"))
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
@@ -71,6 +80,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
@@ -80,8 +90,12 @@ dependencies {
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.kotlinx.serialization)
+    implementation(libs.okhttp)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.okhttp.mockwebserver)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)

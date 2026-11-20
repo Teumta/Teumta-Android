@@ -1,30 +1,31 @@
 package com.teumta.app.ui.info
 
 import android.widget.Toast
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import com.teumta.app.BuildConfig
-import com.teumta.app.ui.theme.TeumtaTheme
+import com.teumta.app.ui.input.SectionGap
+import com.teumta.core.designsystem.component.TeumtaAppBar
+import com.teumta.core.designsystem.component.TeumtaHelpButton
+import com.teumta.core.designsystem.component.TeumtaListLabel
+import com.teumta.core.designsystem.component.TeumtaListRow
+import com.teumta.core.designsystem.theme.TeumtaDimens
+import com.teumta.core.designsystem.theme.TeumtaTheme
 
+// 앱 정보: 설정 화면과 같은 목록 모양. 지원 구간, 데이터 출처, 문의와 개인정보, 오픈소스 라이선스
 @Composable
 fun InfoScreen(onBack: () -> Unit) {
     val uriHandler = LocalUriHandler.current
@@ -35,70 +36,67 @@ fun InfoScreen(onBack: () -> Unit) {
             .onFailure { Toast.makeText(context, "열 수 있는 앱이 없어요: $uri", Toast.LENGTH_LONG).show() }
     }
 
-    Scaffold { innerPadding ->
+    Scaffold(
+        containerColor = TeumtaTheme.colors.bgSurface,
+        topBar = { TeumtaAppBar(title = "앱 정보", onBack = onBack, modifier = Modifier.statusBarsPadding()) },
+    ) { innerPadding ->
         Column(
-            modifier = Modifier
+            Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                .verticalScroll(rememberScrollState()),
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("앱 정보", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
-                TextButton(onClick = onBack) { Text("닫기") }
-            }
+            // 설명은 줄글 대신 이름·값 줄로, 더 긴 설명은 물음표 안내로 둔다
+            TeumtaListLabel("지원 구간", help = { TeumtaHelpButton("지원 구간", COVERAGE_HELP) })
+            TeumtaListRow(label = "노선", value = "1호선 102개 역")
+            TeumtaListRow(label = "구간", value = "연천~인천·신창, 광명, 서동탄")
+            TeumtaListRow(label = "시간표 기준일", value = AppInfo.TIMETABLE_BASE_DATE)
+            TeumtaListRow(label = "실시간 지연", value = "반영하지 않음", divider = false)
 
-            Section("지원 구간") {
-                Text("1호선 서울역~인천 (29개 역), 일반열차 기준이에요.")
-                Text("급행은 빼고 계산해서 실제보다 조금 이른 열차가 나올 수 있어요. 실시간 지연은 반영하지 않아요.")
-                Text("시간표 기준일: ${AppInfo.TIMETABLE_BASE_DATE}")
-            }
+            SectionGap()
+            TeumtaListLabel("데이터 출처", help = { TeumtaHelpButton("데이터 출처", SOURCE_HELP) })
+            TeumtaListRow(label = AppInfo.DATA_SOURCE_NAME, sub = "공공데이터포털에서 보기", onClick = { open(AppInfo.DATA_SOURCE_URL) }, divider = false)
 
-            Section("데이터 출처") {
-                Text(AppInfo.DATA_SOURCE_NAME)
-                LinkButton("공공데이터포털에서 보기") { open(AppInfo.DATA_SOURCE_URL) }
-                Text("틈타는 정부·철도 운영기관과 관계없는 개인 프로젝트예요.", style = MaterialTheme.typography.bodyMedium)
-            }
+            SectionGap()
+            TeumtaListLabel("문의와 개인정보", help = { TeumtaHelpButton("개인정보", PRIVACY_HELP) })
+            TeumtaListRow(label = "문의 메일", sub = AppInfo.CONTACT_EMAIL, onClick = { open("mailto:${AppInfo.CONTACT_EMAIL}") })
+            TeumtaListRow(label = "개인정보처리방침", onClick = { open(AppInfo.PRIVACY_URL) }, divider = false)
 
-            Section("문의와 개인정보") {
-                LinkButton("문의 메일 보내기 (${AppInfo.CONTACT_EMAIL})") { open("mailto:${AppInfo.CONTACT_EMAIL}") }
-                LinkButton("개인정보처리방침") { open(AppInfo.PRIVACY_URL) }
-                Text("틈타는 개인정보를 모으지 않아요. 계산은 모두 기기 안에서 해요.", style = MaterialTheme.typography.bodyMedium)
+            SectionGap()
+            TeumtaListLabel("오픈소스 라이선스")
+            OPEN_SOURCE_LICENSES.forEach { oss ->
+                TeumtaListRow(label = oss.name, sub = "${oss.owner} · ${oss.license}")
             }
-
-            Section("오픈소스 라이선스") {
-                OPEN_SOURCE_LICENSES.forEachIndexed { index, oss ->
-                    if (index > 0) HorizontalDivider()
-                    Text(oss.name, style = MaterialTheme.typography.bodyLarge)
-                    Text("${oss.owner} · ${oss.license}", style = MaterialTheme.typography.bodySmall)
-                }
-                LinkButton("Apache License 2.0 전문") { open(APACHE_LICENSE_URL) }
-            }
+            TeumtaListRow(label = "Apache License 2.0 전문", onClick = { open(APACHE_LICENSE_URL) })
+            TeumtaListRow(label = "SIL Open Font License 1.1 전문", onClick = { open(OFL_LICENSE_URL) }, divider = false)
 
             Text(
-                "틈타 ${BuildConfig.VERSION_NAME}",
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.align(Alignment.CenterHorizontally),
+                text = "틈타 ${BuildConfig.VERSION_NAME}",
+                modifier = Modifier.fillMaxWidth().padding(TeumtaDimens.Space24),
+                style = TeumtaTheme.typography.caption,
+                color = TeumtaTheme.colors.textTertiary,
+                textAlign = TextAlign.Center,
             )
         }
     }
 }
 
-@Composable
-private fun Section(title: String, content: @Composable () -> Unit) {
-    Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(title, style = MaterialTheme.typography.titleMedium)
-            content()
-        }
-    }
-}
+private val COVERAGE_HELP = listOf(
+    "급행과 갈아타기까지 계산해요.",
+    "갈아타는 시간은 역마다 2~5분으로 잡아요.",
+    "실시간 지연은 반영하지 않아서, 열차가 늦으면 실제와 다를 수 있어요.",
+)
 
-@Composable
-private fun LinkButton(text: String, onClick: () -> Unit) {
-    TextButton(onClick = onClick) { Text(text) }
-}
+private val SOURCE_HELP = listOf(
+    "시간표는 공공데이터포털의 국토교통부(TAGO) 지하철정보를 받아 만들었어요.",
+    "틈타는 정부·철도 운영기관과 관계없는 개인 프로젝트예요.",
+)
+
+private val PRIVACY_HELP = listOf(
+    "열차 계산은 휴대폰 안에서 해요.",
+    "회원가입하면 이메일과 자주 쓰는 두 역을 서버에 저장해요.",
+    "탈퇴하면 서버에서 바로 지워요.",
+)
 
 @Preview(showBackground = true)
 @Composable
