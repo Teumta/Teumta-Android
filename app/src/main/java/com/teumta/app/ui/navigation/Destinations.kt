@@ -25,7 +25,8 @@ object CommuteDestination
 @Serializable
 data class ResultDestination(
     val fromId: String,
-    val viaId: String,
+    // null이면 들르지 않고 바로 간다
+    val viaId: String?,
     val toId: String,
     // LocalTime은 그대로 넘길 수 없어서 0시부터의 분으로 넘긴다 (21:00 -> 1260)
     val arriveByMinute: Int,

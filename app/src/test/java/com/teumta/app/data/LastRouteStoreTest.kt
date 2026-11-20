@@ -42,6 +42,15 @@ class LastRouteStoreTest {
     }
 
     @Test
+    fun 들르지_않은_경로는_들를_역_없이_다시_읽힌다() = runTest {
+        val store = store(backgroundScope)
+        store.save(route)
+        // 바로 가기로 다시 저장하면 지난번 들를 역이 남지 않는다
+        store.save(route.copy(viaId = null))
+        assertEquals(route.copy(viaId = null), store.lastRoute.first())
+    }
+
+    @Test
     fun 다시_저장하면_마지막_값으로_바뀐다() = runTest {
         val store = store(backgroundScope)
         store.save(route)

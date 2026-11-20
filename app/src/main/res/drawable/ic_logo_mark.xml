@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 입력 화면 맨 위 로고: 주황 원 안의 핀과 시계 (스플래시 아이콘에서 노선만 뺐다) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="28dp"
+    android:height="28dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path android:fillColor="#FFCC4B0C" android:pathData="M54,0A54,54 0 1,1 54,108A54,54 0 1,1 54,0Z" />
+    <group android:scaleX="0.62" android:scaleY="0.62" android:translateX="16.8" android:translateY="16.8">
+        <path android:fillType="evenOdd" android:fillColor="#FFFFFFFF"
+            android:pathData="M60,92C60,92 34,68 34,47A26,26 0 1 1 86,47C86,68 60,92 60,92Z M60,32A15,15 0 1 0 60,62A15,15 0 1 0 60,32Z" />
+        <path android:pathData="M60,39V47L66,51" android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="5" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    </group>
+</vector>
