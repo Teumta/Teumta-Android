@@ -16,6 +16,7 @@ object TeumtaIcons {
     val Sliders     : ImageVector @Composable get() = ImageVector.vectorResource(R.drawable.ic_sliders)
     val Clock       : ImageVector @Composable get() = ImageVector.vectorResource(R.drawable.ic_clock)
     val Info        : ImageVector @Composable get() = ImageVector.vectorResource(R.drawable.ic_info)
+    val Help        : ImageVector @Composable get() = ImageVector.vectorResource(R.drawable.ic_help)
     val Flag        : ImageVector @Composable get() = ImageVector.vectorResource(R.drawable.ic_flag)
     val Walk        : ImageVector @Composable get() = ImageVector.vectorResource(R.drawable.ic_walk)
     val Train       : ImageVector @Composable get() = ImageVector.vectorResource(R.drawable.ic_train)

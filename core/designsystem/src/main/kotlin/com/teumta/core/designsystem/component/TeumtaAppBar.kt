@@ -40,7 +40,7 @@ fun TeumtaAppBar(
             Spacer(Modifier.width(TeumtaDimens.Space16))
         }
         Column(Modifier.weight(1f)) {
-            // Home 타입: 작은 머리글(퇴근길) + 굵은 제목(경로)
+            // Home 타입: 작은 머리글 + 굵은 제목(경로)
             overline?.let { Text(it, style = type.caption, color = colors.textTertiary) }
             Text(title, style = if (overline != null) type.titleL else type.title, color = colors.textPrimary, maxLines = 1)
             subtitle?.let { Text(it, style = type.caption, color = colors.textTertiary) }
@@ -50,6 +50,6 @@ fun TeumtaAppBar(
 }
 
 // 홈 앱바 예: TeumtaAppBar(
-//     overline = "퇴근길", title = "가산디지털단지 → 동암",
+//     overline = "오늘", title = "가산디지털단지 → 동암",
 //     actions = { IconButton(onClick = onSettings) { Icon(TeumtaIcons.Sliders, contentDescription = "설정") } },
 // )
