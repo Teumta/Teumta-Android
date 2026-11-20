@@ -44,14 +44,14 @@ class DepartureCalculatorTest {
 
         assertEquals(listOf("T1"), result.plan.first.trainIds)
         assertEquals(sec("08:00"), result.plan.departSec)
-        assertEquals(listOf("T2"), result.plan.second.trainIds)
+        assertEquals(listOf("T2"), result.plan.second!!.trainIds)
         assertEquals(listOf("T0"), result.alternative?.first?.trainIds)
     }
 
     @Test
     fun 도착_시각과_정확히_같은_열차도_탈_수_있다() {
-        assertEquals(listOf("T2"), calculate(arriveBy = "08:50", stayMin = 10).plan.second.trainIds)
-        assertEquals(listOf("T1"), calculate(arriveBy = "08:49:59", stayMin = 10).plan.second.trainIds)
+        assertEquals(listOf("T2"), calculate(arriveBy = "08:50", stayMin = 10).plan.second!!.trainIds)
+        assertEquals(listOf("T1"), calculate(arriveBy = "08:49:59", stayMin = 10).plan.second!!.trainIds)
     }
 
     @Test
@@ -91,8 +91,27 @@ class DepartureCalculatorTest {
     @Test
     fun 자정_넘은_도착_시각도_계산한다() {
         val result = calculate(arriveBy = "24:40", stayMin = 10)
-        assertEquals(listOf("T4"), result.plan.second.trainIds)
+        assertEquals(listOf("T4"), result.plan.second!!.trainIds)
         assertEquals(listOf("T3"), result.plan.first.trainIds)
+    }
+
+    @Test
+    fun 들를_역이_없으면_도착역까지_바로_가는_가장_늦은_열차() {
+        // C에 09:00까지 -> T2(C 08:50 도착)가 답, T1이 대안. 머무름이 없어 staySec은 null
+        val result = calculator.calculate(directRequest(arriveBy = "09:00")) as DepartureResult.Success
+
+        assertEquals(listOf("T2"), result.plan.first.trainIds)
+        assertNull(result.plan.second)
+        assertNull(result.plan.staySec)
+        assertEquals(sec("08:30"), result.plan.departSec)
+        assertEquals(sec("08:50"), result.plan.arriveSec)
+        assertEquals(listOf("T1"), result.alternative?.first?.trainIds)
+    }
+
+    @Test
+    fun 바로_가기도_첫차_전이면_실패하고_이미_떠났으면_실패() {
+        assertFailure(FailReason.NO_TRAIN_BEFORE_ARRIVAL, calculator.calculate(directRequest(arriveBy = "07:49")))
+        assertFailure(FailReason.ALREADY_DEPARTED, calculator.calculate(directRequest(arriveBy = "09:00", now = "08:31")))
     }
 
     @Test(expected = IllegalArgumentException::class)
@@ -108,6 +127,9 @@ class DepartureCalculatorTest {
 
     private fun request(arriveBy: String, stayMin: Int, now: String? = null) =
         DepartureRequest("A", "B", "C", DayType.WEEKDAY, sec(arriveBy), stayMin, now?.let(::sec))
+
+    private fun directRequest(arriveBy: String, now: String? = null) =
+        DepartureRequest("A", null, "C", DayType.WEEKDAY, sec(arriveBy), stayMin = 0, nowSec = now?.let(::sec))
 
     private fun assertFailure(reason: FailReason, result: DepartureResult) {
         assertEquals(DepartureResult.Failure(reason), result)

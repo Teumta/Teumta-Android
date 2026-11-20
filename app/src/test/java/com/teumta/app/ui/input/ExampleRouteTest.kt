@@ -10,7 +10,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.ZonedDateTime
 
-// 심사자가 언제 앱을 열어도, 예시 경로와 기본값 그대로 계산하면 결과가 나와야 한다
+// 심사자가 언제 앱을 열어도, 예시 경로와 기본값 그대로 계산하면 결과가 나와야 한다(들를 역을 지워도)
 class ExampleRouteTest {
 
     private val timetable = Line1Assets.timetable
@@ -33,6 +33,14 @@ class ExampleRouteTest {
                     ),
                 )
                 assertTrue("$now 에 열면 $arriveBy 까지 → $result", result is DepartureResult.Success)
+                // 들를 역을 지운 바로 가기(서울역 → 인천)도 결과가 나와야 한다
+                val direct = calculator.calculate(
+                    DepartureRequest(
+                        idByName.getValue("서울역"), null, idByName.getValue("인천"),
+                        calcDay.dayType, arriveBySec, stayMin = 30, nowSec = calcDay.nowSec,
+                    ),
+                )
+                assertTrue("바로 가기: $now 에 열면 $arriveBy 까지 → $direct", direct is DepartureResult.Success)
                 now = now.plusMinutes(10)
             }
         }

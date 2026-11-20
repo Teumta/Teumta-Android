@@ -19,13 +19,14 @@ import javax.inject.Singleton
 class LastRouteStore @Inject constructor(
     private val dataStore: DataStore<Preferences>,
 ) {
-    // 저장한 값이 바뀔 때마다 새 값을 내보내는 흐름. 하나라도 비어 있으면 null
+    // 저장한 값이 바뀔 때마다 새 값을 내보내는 흐름. 들를 역 말고 하나라도 비어 있으면 null
     val lastRoute: Flow<LastRoute?> = dataStore.data
         .catch { e -> if (e is IOException) emit(emptyPreferences()) else throw e } // 파일을 못 읽으면 빈 값으로
         .map { prefs ->
             LastRoute(
                 fromId = prefs[FROM_ID] ?: return@map null,
-                viaId = prefs[VIA_ID] ?: return@map null,
+                // 들를 역이 없으면(바로 가기) 비어 있다
+                viaId = prefs[VIA_ID],
                 toId = prefs[TO_ID] ?: return@map null,
                 stayMin = prefs[STAY_MIN] ?: return@map null,
             )
@@ -35,7 +36,8 @@ class LastRouteStore @Inject constructor(
     suspend fun save(route: LastRoute) {
         dataStore.edit { prefs ->
             prefs[FROM_ID] = route.fromId
-            prefs[VIA_ID] = route.viaId
+            // 바로 가기면 지난번 들를 역이 남지 않게 지운다
+            if (route.viaId != null) prefs[VIA_ID] = route.viaId else prefs.remove(VIA_ID)
             prefs[TO_ID] = route.toId
             prefs[STAY_MIN] = route.stayMin
         }

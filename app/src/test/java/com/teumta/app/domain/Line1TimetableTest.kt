@@ -33,13 +33,13 @@ class Line1TimetableTest {
 
         assertEquals(sec("15:29"), result.plan.departSec)
         // 부평 -> 구로(용산행), 구로 -> 광명(광명행)
-        val second = result.plan.second.rides
+        val second = result.plan.second!!.rides
         assertEquals(listOf("부평" to "구로", "구로" to "광명"), second.map { nameById[it.fromId] to nameById[it.toId] })
         assertEquals(sec("16:55"), second[0].arriveSec)
         assertEquals(sec("17:07:30"), second[1].departSec)
         // 구로는 갈아타는 데 4분이 걸린다
         assertTrue(second[1].departSec - second[0].arriveSec >= 240)
-        assertEquals(sec("17:22"), result.plan.second.arriveSec)
+        assertEquals(sec("17:22"), result.plan.second!!.arriveSec)
     }
 
     @Test
@@ -48,10 +48,10 @@ class Line1TimetableTest {
 
         // 구로에서 20:17:30 동인천행을 타고 동인천에서 먼저 떠난 인천행으로 갈아탄다.
         // 일반열차만 보던 예전 계산(20:11:30)보다 구로에서 6분 늦게 떠나도 된다
-        val second = result.plan.second.rides
+        val second = result.plan.second!!.rides
         assertEquals(sec("20:17:30"), second[0].departSec)
         assertEquals(listOf("동인천", "인천"), second.map { it.train.headsign })
-        assertEquals(sec("20:59"), result.plan.second.arriveSec)
+        assertEquals(sec("20:59"), result.plan.second!!.arriveSec)
         assertEquals(sec("19:25:30"), result.plan.departSec)
     }
 
@@ -60,8 +60,8 @@ class Line1TimetableTest {
         val result = success(DayType.HOLIDAY, "서동탄", "수원", "서울역", arriveBy = sec("15:00"), stayMin = 60)
 
         assertEquals(sec("12:28"), result.plan.departSec)
-        assertEquals(sec("13:56:30"), result.plan.second.departSec)
-        assertEquals(sec("14:49:30"), result.plan.second.arriveSec)
+        assertEquals(sec("13:56:30"), result.plan.second!!.departSec)
+        assertEquals(sec("14:49:30"), result.plan.second!!.arriveSec)
         assertEquals(sec("12:02"), result.alternative?.departSec)
     }
 
@@ -70,8 +70,8 @@ class Line1TimetableTest {
         val result = success(DayType.WEEKDAY, "구로", "부평", "인천", arriveBy = sec("24:30"), stayMin = 30)
 
         assertEquals(sec("23:05:30"), result.plan.departSec)
-        assertEquals(sec("23:59"), result.plan.second.departSec)
-        assertEquals(sec("24:21"), result.plan.second.arriveSec)
+        assertEquals(sec("23:59"), result.plan.second!!.departSec)
+        assertEquals(sec("24:21"), result.plan.second!!.arriveSec)
     }
 
     @Test

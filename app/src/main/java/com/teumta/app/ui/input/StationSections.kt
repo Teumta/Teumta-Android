@@ -5,12 +5,9 @@ import com.teumta.app.domain.model.Station
 
 // 노선도를 갈림길에서 끊은 한 토막. branchFrom은 이 토막이 갈라져 나온 역이다(맨 처음 토막은 null)
 data class StationSection(val branchFrom: Station?, val stations: List<Station>) {
-    // 토막 위에 보여 줄 제목. 예: "구로에서 갈라짐 · 구일 ~ 인천", "금천구청에서 갈라짐 · 광명"
+    // 토막 위에 보여 줄 제목. 갈라진 토막은 갈라지는 역부터 적는다. 예: "연천 – 구로", "구로 – 인천", "금천구청 – 광명"
     val title: String
-        get() {
-            val range = if (stations.size == 1) stations.first().name else "${stations.first().name} ~ ${stations.last().name}"
-            return if (branchFrom == null) range else "${branchFrom.name}에서 갈라짐 · $range"
-        }
+        get() = "${(branchFrom ?: stations.first()).name} – ${stations.last().name}"
 }
 
 // 연천부터 나무를 따라 내려가며 토막으로 나눈다. 이웃 역이 하나면 같은 토막에 잇고, 갈라지는 역에서 끊는다.

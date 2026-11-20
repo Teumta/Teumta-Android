@@ -38,8 +38,21 @@ class RestoreSelectionTest {
     }
 
     @Test
-    fun 경유역이_두_역을_잇는_길에_없으면_null() {
+    fun 들르지_않은_경로도_되살린다() {
+        val selection = restoreSelection(tree, LastRoute(fromId = "S1", viaId = null, toId = "S6", stayMin = 30))
+        assertEquals(RouteSelection(tree, from = s[0], to = s[5]), selection)
+    }
+
+    @Test
+    fun 들를_역이_두_역을_잇는_길에_없으면_바로_가기로_되살린다() {
         // 역4 -> 역6 길은 역3, 역5를 지난다. 역2는 길 밖이다
-        assertNull(restoreSelection(tree, LastRoute(fromId = "S4", viaId = "S2", toId = "S6", stayMin = 30)))
+        val selection = restoreSelection(tree, LastRoute(fromId = "S4", viaId = "S2", toId = "S6", stayMin = 30))
+        assertEquals(RouteSelection(tree, from = s[3], to = s[5]), selection)
+    }
+
+    @Test
+    fun 들를_역만_시간표에서_없어졌으면_바로_가기로_되살린다() {
+        val selection = restoreSelection(tree, LastRoute(fromId = "S1", viaId = "X99", toId = "S6", stayMin = 30))
+        assertEquals(RouteSelection(tree, from = s[0], to = s[5]), selection)
     }
 }
