@@ -76,6 +76,26 @@ class DepartureCalculatorTest {
     }
 
     @Test
+    fun 너무_오래_머무르면_가장_오래_머무를_수_있는_시간을_알려_준다() {
+        // C 08:20 -> B에서 T1(08:10:30). A에서 가장 일찍 떠나는 T0이 B에 07:40 도착
+        // -> 08:10:30 - 07:40 - 2분 = 28분 30초
+        assertEquals(28 * 60 + 30, calculator.maxStaySec(request(arriveBy = "08:20", stayMin = 60)))
+        // 지금이 07:31이면 T0은 떠났고, 그다음 T1은 B에 08:10에 닿아 08:10:30 열차를 탈 여유(2분)가 없다
+        assertNull(calculator.maxStaySec(request(arriveBy = "08:20", stayMin = 60, now = "07:31")))
+        // 들를 역이 없으면 머무를 시간도 없다
+        assertNull(calculator.maxStaySec(directRequest(arriveBy = "08:20")))
+    }
+
+    @Test
+    fun 지금_떠나는_열차로_덜_머물면_들를_수_있으면_이미_떠났다가_아니라_머무를_시간이_문제다() {
+        // C 09:20 -> B에서 T3(09:10:30) -> 60분 머물려면 A에서 T0(07:30)을 타야 하는데 지금은 08:01.
+        // 지금 탈 수 있는 T2(B 08:40)로 가면 28분 30초는 머무를 수 있다
+        val request = request(arriveBy = "09:20", stayMin = 60, now = "08:01")
+        assertFailure(FailReason.STAY_TOO_LONG, calculator.calculate(request))
+        assertEquals(28 * 60 + 30, calculator.maxStaySec(request))
+    }
+
+    @Test
     fun 답_열차가_이미_떠났으면_실패() {
         val result = calculator.calculate(request(arriveBy = "09:00", stayMin = 10, now = "08:01"))
         assertFailure(FailReason.ALREADY_DEPARTED, result)
