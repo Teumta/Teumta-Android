@@ -19,6 +19,8 @@ data class InputUiState(
     val work: Station? = null,
     // 바뀐 개인정보처리방침 안내를 아직 보지 않았으면 true(앱을 연 뒤 한 번 보여 준다)
     val showPolicyNotice: Boolean = false,
+    // 결과 화면에서 돌아오며 열어 달라고 한 것(도착 시각 시트, 들를 역 고르기). 연 뒤에는 null로 비운다
+    val pendingOpen: InputOpenRequest? = null,
 ) {
     val canCalculate: Boolean get() = selection.isComplete
 
@@ -28,6 +30,9 @@ data class InputUiState(
         return RouteInput(from.id, selection.via?.id, to.id, arriveBy, stayMin)
     }
 }
+
+// 결과 화면의 "도착 시각 늦추기", "중간에 들렀다 가기"가 입력 화면에 열어 달라고 하는 것
+enum class InputOpenRequest { ARRIVE_SHEET, VIA_PICKER }
 
 // 계산 버튼을 눌렀을 때 결과 화면으로 넘길 값
 data class RouteInput(

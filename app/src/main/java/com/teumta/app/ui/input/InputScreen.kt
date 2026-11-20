@@ -31,6 +31,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -81,6 +82,14 @@ fun InputRoute(
     // 어느 칸을 고르는 중인지는 화면만 알면 되는 값이라 ViewModel에 두지 않는다. 화면을 돌려도 남게 rememberSaveable
     var picking by rememberSaveable { mutableStateOf<StationRole?>(null) }
 
+    // 결과 화면의 "중간에 들렀다 가기"로 돌아왔으면 들를 역 고르기를 연다(도착 시각 시트는 InputScreen이 연다)
+    LaunchedEffect(state.pendingOpen) {
+        if (state.pendingOpen == InputOpenRequest.VIA_PICKER) {
+            if (state.selection.isComplete) picking = StationRole.VIA
+            viewModel.onPendingOpenHandled()
+        }
+    }
+
     val role = picking
     if (role != null) {
         StationPickerScreen(
@@ -109,6 +118,7 @@ fun InputRoute(
         onSettingsClick = onSettingsClick,
         onCommute = viewModel::onCommute,
         onPolicyNoticeSeen = viewModel::onPolicyNoticeSeen,
+        onPendingOpenHandled = viewModel::onPendingOpenHandled,
     )
 }
 
@@ -125,9 +135,17 @@ fun InputScreen(
     onSettingsClick: () -> Unit,
     onCommute: (CommuteDirection) -> Unit,
     onPolicyNoticeSeen: () -> Unit,
+    onPendingOpenHandled: () -> Unit = {},
 ) {
     // 어느 시간 시트를 열었는지는 화면만 알면 되는 값이라 ViewModel에 두지 않는다
     var openSheet by rememberSaveable { mutableStateOf<TimeSheetKind?>(null) }
+    // 결과 화면의 "도착 시각 늦추기"로 돌아왔으면 도착 시각 시트를 연다
+    LaunchedEffect(state.pendingOpen) {
+        if (state.pendingOpen == InputOpenRequest.ARRIVE_SHEET) {
+            openSheet = TimeSheetKind.ARRIVE
+            onPendingOpenHandled()
+        }
+    }
     val selection = state.selection
 
     Scaffold(
