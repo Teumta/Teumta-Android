@@ -103,27 +103,33 @@ private fun SuccessContent(state: ResultUiState.Ready, result: DepartureResult.S
         Card(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp)) {
                 Text("한 대 앞 열차", style = MaterialTheme.typography.titleMedium)
-                Text(
-                    "${formatClock(alt.departSec)} 출발 · ${state.nameOf(alt.first.toId)}에서 ${formatDuration(alt.staySec)} 머무를 수 있어요",
-                    style = MaterialTheme.typography.bodyMedium,
-                )
+                val detail = alt.staySec?.let { "${state.nameOf(alt.first.toId)}에서 ${formatDuration(it)} 머무를 수 있어요" }
+                    ?: "${state.nameOf(alt.first.toId)} ${formatClock(alt.arriveSec)} 도착"
+                Text("${formatClock(alt.departSec)} 출발 · $detail", style = MaterialTheme.typography.bodyMedium)
             }
         }
     }
 }
 
-// 출발역 승차 → (갈아타기) → 경유역 하차 → 머무름 → 경유역 승차 → (갈아타기) → 도착역 하차
+// 출발역 승차 → (갈아타기) → 경유역 하차 → 머무름 → 경유역 승차 → (갈아타기) → 도착역 하차.
+// 바로 가면 출발역 승차 → (갈아타기) → 도착역 하차
 @Composable
 private fun Timeline(state: ResultUiState.Ready, plan: DeparturePlan) {
+    val second = plan.second
+    val staySec = plan.staySec
+    if (second == null || staySec == null) {
+        JourneyRows(state, plan.first, lastLabel = "${state.nameOf(plan.first.toId)} 도착")
+        return
+    }
     val via = state.nameOf(plan.first.toId)
     JourneyRows(state, plan.first, lastLabel = "$via 하차")
     TimelineRow(
         time = "",
-        title = "${via}에서 ${formatDuration(plan.staySec)} 머무름",
+        title = "${via}에서 ${formatDuration(staySec)} 머무름",
         detail = "원한 시간 ${formatDuration(state.stayMin * 60)} · 내리고 타는 여유 2분은 뺐어요",
         highlight = true,
     )
-    JourneyRows(state, plan.second, lastLabel = "${state.nameOf(plan.second.toId)} 도착")
+    JourneyRows(state, second, lastLabel = "${state.nameOf(second.toId)} 도착")
 }
 
 // 열차마다 승차 한 줄, 하차 한 줄. 갈아타면 열차 수만큼 줄이 늘어난다
