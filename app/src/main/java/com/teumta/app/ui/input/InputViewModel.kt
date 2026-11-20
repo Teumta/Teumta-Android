@@ -54,7 +54,7 @@ class InputViewModel @Inject constructor(
                     isLoading = false,
                     sections = stationSections(tree),
                     selection = selection,
-                    stayMin = saved?.stayMin?.takeIf { min -> min in STAY_OPTIONS } ?: it.stayMin,
+                    stayMin = saved?.stayMin?.takeIf(StayChoice::isValid) ?: it.stayMin,
                 )
             }
             // 자주 쓰는 두 역이 바뀔 때마다(설정에서 저장, 로그아웃) 역 ID를 역으로 바꿔 둔다
@@ -128,9 +128,5 @@ class InputViewModel @Inject constructor(
     private fun exampleSelection(tree: StationTree): RouteSelection {
         val byName = tree.stations.associateBy { it.name }
         return RouteSelection(tree, from = byName["서울역"], to = byName["인천"], via = byName["구로"])
-    }
-
-    companion object {
-        val STAY_OPTIONS = listOf(10, 30, 60)
     }
 }
