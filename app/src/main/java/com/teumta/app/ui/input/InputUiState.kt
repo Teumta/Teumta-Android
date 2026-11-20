@@ -14,9 +14,9 @@ data class InputUiState(
     val selection: RouteSelection = RouteSelection(),
     val arriveBy: LocalTime,
     val stayMin: Int = 30,
-    // 로그인해서 저장해 둔 자주 쓰는 두 역(서버 이름은 home·work). 둘 다 있을 때만 두 역 버튼을 보여 준다
-    val home: Station? = null,
-    val work: Station? = null,
+    // 로그인해서 저장해 둔 자주 쓰는 두 역. 둘 다 있을 때만 두 역 버튼을 보여 준다
+    val favoriteOrigin: Station? = null,
+    val favoriteDestination: Station? = null,
     // 바뀐 개인정보처리방침 안내를 아직 보지 않았으면 true(앱을 연 뒤 한 번 보여 준다)
     val showPolicyNotice: Boolean = false,
     // 결과 화면에서 돌아오며 열어 달라고 한 것(도착 시각 시트, 들를 역 고르기). 연 뒤에는 null로 비운다
@@ -65,14 +65,14 @@ fun restoreSelection(tree: StationTree, saved: LastRoute): RouteSelection? {
     return route.pick(StationRole.VIA, via)
 }
 
-enum class CommuteDirection { TO_WORK, TO_HOME }
+enum class FavoriteDirection { FORWARD, BACKWARD }
 
-// 두 역 버튼. TO_WORK는 home → work, TO_HOME은 work → home 방향으로 출발·도착을 채우고 들를 역은 비운다(바로 가기).
+// 두 역 버튼. FORWARD는 출발역 → 도착역, BACKWARD는 도착역 → 출발역 방향으로 출발·도착을 채우고 들를 역은 비운다(바로 가기).
 // 들를 곳은 날마다 달라서 남겨 두지 않는다. 두 역 중 하나라도 없으면 null
-fun InputUiState.commuteSelection(direction: CommuteDirection): RouteSelection? {
+fun InputUiState.favoriteSelection(direction: FavoriteDirection): RouteSelection? {
     val (from, to) = when (direction) {
-        CommuteDirection.TO_WORK -> home to work
-        CommuteDirection.TO_HOME -> work to home
+        FavoriteDirection.FORWARD -> favoriteOrigin to favoriteDestination
+        FavoriteDirection.BACKWARD -> favoriteDestination to favoriteOrigin
     }
     if (from == null || to == null) return null
     if (from == to) return null

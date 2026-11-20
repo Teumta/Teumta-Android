@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Scaffold
@@ -36,18 +35,19 @@ import com.teumta.app.ui.input.StationSection
 import com.teumta.app.ui.input.stationSections
 import com.teumta.core.designsystem.component.TeumtaAppBar
 import com.teumta.core.designsystem.component.TeumtaButton
+import com.teumta.core.designsystem.component.TeumtaHelpButton
 import com.teumta.core.designsystem.theme.TeumtaDimens
 import com.teumta.core.designsystem.theme.TeumtaTheme
 
 @Composable
-fun CommuteRoute(
+fun FavoriteStationsRoute(
     onBack: () -> Unit,
     onDone: () -> Unit,
-    viewModel: CommuteViewModel = hiltViewModel(),
+    viewModel: FavoriteStationsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     LaunchedEffect(state.done) { if (state.done) onDone() }
-    CommuteScreen(
+    FavoriteStationsScreen(
         state = state,
         onBack = onBack,
         onPick = viewModel::onPick,
@@ -59,30 +59,35 @@ fun CommuteRoute(
 }
 
 @Composable
-fun CommuteScreen(
-    state: CommuteUiState,
+fun FavoriteStationsScreen(
+    state: FavoriteStationsUiState,
     onBack: () -> Unit,
-    onPick: (CommuteSlot) -> Unit,
+    onPick: (FavoriteSlot) -> Unit,
     onCancelPick: () -> Unit,
     onStationPicked: (Station) -> Unit,
-    onClear: (CommuteSlot) -> Unit,
+    onClear: (FavoriteSlot) -> Unit,
     onSave: () -> Unit,
 ) {
     val picking = state.picking
     // 역 목록을 펼친 동안 뒤로 가기는 목록만 닫는다(화면을 떠나면 고른 값이 사라진다)
     BackHandler(enabled = picking != null, onBack = onCancelPick)
     val title = when (picking) {
-        CommuteSlot.HOME -> "집역 고르기"
-        CommuteSlot.WORK -> "회사역 고르기"
-        null -> "집역·회사역"
+        FavoriteSlot.ORIGIN -> "출발역 고르기"
+        FavoriteSlot.DESTINATION -> "도착역 고르기"
+        null -> "자주 쓰는 두 역"
     }
 
     Scaffold(
+        containerColor = TeumtaTheme.colors.bgSurface,
         topBar = {
             TeumtaAppBar(
                 title = title,
                 onBack = if (picking != null) onCancelPick else onBack,
                 modifier = Modifier.statusBarsPadding(),
+                actions = {
+                    // 역 목록을 펼친 동안에는 안내 버튼을 숨긴다
+                    if (picking == null) TeumtaHelpButton("자주 쓰는 두 역", favoriteHelp(state.origin?.name, state.destination?.name))
+                },
             )
         },
     ) { innerPadding ->
@@ -90,39 +95,36 @@ fun CommuteScreen(
             when {
                 state.isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
                 picking != null -> StationPicker(state.sections, onStationPicked)
-                else -> CommuteForm(state, onPick, onClear, onSave)
+                else -> FavoriteStationsForm(state, onPick, onClear, onSave)
             }
         }
     }
 }
 
 @Composable
-private fun CommuteForm(
-    state: CommuteUiState,
-    onPick: (CommuteSlot) -> Unit,
-    onClear: (CommuteSlot) -> Unit,
+private fun FavoriteStationsForm(
+    state: FavoriteStationsUiState,
+    onPick: (FavoriteSlot) -> Unit,
+    onClear: (FavoriteSlot) -> Unit,
     onSave: () -> Unit,
 ) {
     val colors = TeumtaTheme.colors
     val type = TeumtaTheme.typography
-    Column(
-        modifier = Modifier.fillMaxSize().padding(TeumtaDimens.Space20),
-        verticalArrangement = Arrangement.spacedBy(TeumtaDimens.Space12),
-    ) {
-        Text(
-            "정해 두면 입력 화면에 출근길·퇴근길 버튼이 생겨요. 틈타 서버에 저장해서 다른 휴대폰에서도 로그인하면 그대로 쓸 수 있어요.",
-            style = type.body,
-            color = colors.textSecondary,
-        )
-        SlotRow("집역", state.home, enabled = !state.isSaving, onPick = { onPick(CommuteSlot.HOME) }, onClear = { onClear(CommuteSlot.HOME) })
-        SlotRow("회사역", state.work, enabled = !state.isSaving, onPick = { onPick(CommuteSlot.WORK) }, onClear = { onClear(CommuteSlot.WORK) })
-        ServerError(state.error)
-        TeumtaButton(
-            text = if (state.isSaving) "저장하는 중…" else "저장",
-            onClick = onSave,
-            enabled = !state.isSaving,
-            modifier = Modifier.fillMaxWidth(),
-        )
+    Column(Modifier.fillMaxSize()) {
+        SlotRow("출발역", state.origin, enabled = !state.isSaving, onPick = { onPick(FavoriteSlot.ORIGIN) }, onClear = { onClear(FavoriteSlot.ORIGIN) })
+        SlotRow("도착역", state.destination, enabled = !state.isSaving, onPick = { onPick(FavoriteSlot.DESTINATION) }, onClear = { onClear(FavoriteSlot.DESTINATION) })
+        Column(
+            modifier = Modifier.padding(TeumtaDimens.Space20),
+            verticalArrangement = Arrangement.spacedBy(TeumtaDimens.Space12),
+        ) {
+            ServerError(state.error)
+            TeumtaButton(
+                text = if (state.isSaving) "저장하는 중…" else "저장",
+                onClick = onSave,
+                enabled = !state.isSaving,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
     }
 }
 
@@ -130,18 +132,20 @@ private fun CommuteForm(
 private fun SlotRow(label: String, station: Station?, enabled: Boolean, onPick: () -> Unit, onClear: () -> Unit) {
     val colors = TeumtaTheme.colors
     val type = TeumtaTheme.typography
-    Card(Modifier.fillMaxWidth()) {
+    // 설정 화면 목록과 같은 모양(카드 없이 줄과 구분선)
+    Column(Modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier.padding(start = TeumtaDimens.Space16, end = TeumtaDimens.Space4).heightIn(min = TeumtaDimens.SizeRow),
+            modifier = Modifier.padding(start = TeumtaDimens.Space20, end = TeumtaDimens.Space8).heightIn(min = TeumtaDimens.SizeRow),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(Modifier.weight(1f)) {
-                Text(label, style = type.label, color = colors.textSecondary)
+            Column(Modifier.weight(1f).padding(vertical = TeumtaDimens.Space8)) {
+                Text(label, style = type.label, color = colors.textTertiary)
                 Text(station?.name ?: "정하지 않았어요", style = type.bodyStrong, color = if (station != null) colors.textPrimary else colors.textTertiary)
             }
-            if (station != null) TextButton(onClick = onClear, enabled = enabled) { Text("지우기") }
-            TextButton(onClick = onPick, enabled = enabled) { Text(if (station != null) "바꾸기" else "고르기") }
+            if (station != null) TextButton(onClick = onClear, enabled = enabled) { Text("지우기", color = colors.textSecondary) }
+            TextButton(onClick = onPick, enabled = enabled) { Text(if (station != null) "바꾸기" else "고르기", color = colors.textAccent) }
         }
+        HorizontalDivider(Modifier.padding(horizontal = TeumtaDimens.Space20), TeumtaDimens.StrokeHairline, colors.borderDefault)
     }
 }
 
@@ -181,13 +185,13 @@ private fun StationPicker(sections: List<StationSection>, onStationPicked: (Stat
 
 @Preview(showBackground = true)
 @Composable
-private fun CommuteScreenPreview() {
+private fun FavoriteStationsScreenPreview() {
     val stations = listOf("서울역", "남영", "용산").mapIndexed { i, name ->
         Station("S$i", name, i + 1, parentId = if (i == 0) null else "S${i - 1}")
     }
     TeumtaTheme {
-        CommuteScreen(
-            state = CommuteUiState(isLoading = false, sections = stationSections(StationTree(stations)), home = stations[2]),
+        FavoriteStationsScreen(
+            state = FavoriteStationsUiState(isLoading = false, sections = stationSections(StationTree(stations)), origin = stations[2]),
             onBack = {}, onPick = {}, onCancelPick = {}, onStationPicked = {}, onClear = {}, onSave = {},
         )
     }

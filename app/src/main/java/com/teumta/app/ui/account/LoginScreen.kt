@@ -28,6 +28,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teumta.core.designsystem.component.TeumtaAppBar
+import com.teumta.core.designsystem.component.TeumtaHelpButton
 import com.teumta.core.designsystem.component.TeumtaButton
 import com.teumta.core.designsystem.component.TeumtaTextField
 import com.teumta.core.designsystem.icon.TeumtaIcons
@@ -63,7 +64,7 @@ fun LoginScreen(
     onBack: () -> Unit,
     onSignupClick: () -> Unit,
 ) {
-    Scaffold(topBar = { TeumtaAppBar(title = "로그인", onBack = onBack, modifier = Modifier.statusBarsPadding()) }) { innerPadding ->
+    Scaffold(topBar = { TeumtaAppBar(title = "로그인", onBack = onBack, modifier = Modifier.statusBarsPadding(), actions = { TeumtaHelpButton("로그인하면", ACCOUNT_HELP) }) }) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -73,11 +74,6 @@ fun LoginScreen(
                 .padding(TeumtaDimens.Space20),
             verticalArrangement = Arrangement.spacedBy(TeumtaDimens.Space12),
         ) {
-            Text(
-                "로그인하면 집역·회사역을 저장해서 다른 휴대폰에서도 그대로 쓸 수 있어요.",
-                style = TeumtaTheme.typography.body,
-                color = TeumtaTheme.colors.textSecondary,
-            )
             TeumtaTextField(
                 value = state.email,
                 onValueChange = onEmailChange,

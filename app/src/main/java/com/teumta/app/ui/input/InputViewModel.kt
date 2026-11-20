@@ -42,7 +42,7 @@ class InputViewModel @Inject constructor(
             if (seen != AppInfo.PRIVACY_VERSION) _uiState.update { it.copy(showPolicyNotice = true) }
         }
         viewModelScope.launch {
-            accountRepository.isLoggedIn.collect { loggedIn -> if (loggedIn) loadCommute() }
+            accountRepository.isLoggedIn.collect { loggedIn -> if (loggedIn) loadFavoriteStations() }
         }
         viewModelScope.launch {
             val tree = StationTree(repository.getStations())
@@ -59,11 +59,11 @@ class InputViewModel @Inject constructor(
             }
             // 자주 쓰는 두 역이 바뀔 때마다(설정에서 저장, 로그아웃) 역 ID를 역으로 바꿔 둔다
             launch {
-                accountRepository.commute.collect { commute ->
+                accountRepository.favoriteStations.collect { favoriteStations ->
                     _uiState.update {
                         it.copy(
-                            home = commute?.homeStationId?.let(tree::find),
-                            work = commute?.workStationId?.let(tree::find),
+                            favoriteOrigin = favoriteStations?.originStationId?.let(tree::find),
+                            favoriteDestination = favoriteStations?.destinationStationId?.let(tree::find),
                         )
                     }
                 }
@@ -71,9 +71,9 @@ class InputViewModel @Inject constructor(
         }
     }
 
-    // 로그인해 있으면 서버에서 자주 쓰는 두 역을 받아 둔다(commute가 바뀐다).
+    // 로그인해 있으면 서버에서 자주 쓰는 두 역을 받아 둔다(favoriteStations가 바뀐다).
     // 인터넷이 없어도 계산에는 지장이 없어서, 실패하면 버튼만 안 보이고 넘어간다
-    private suspend fun loadCommute() {
+    private suspend fun loadFavoriteStations() {
         try {
             accountRepository.getMe()
         } catch (e: CancellationException) {
@@ -89,8 +89,8 @@ class InputViewModel @Inject constructor(
         viewModelScope.launch { policyNoticeStore.markSeen(AppInfo.PRIVACY_VERSION) }
     }
 
-    fun onCommute(direction: CommuteDirection) {
-        _uiState.update { state -> state.commuteSelection(direction)?.let { state.copy(selection = it) } ?: state }
+    fun onFavoriteRoute(direction: FavoriteDirection) {
+        _uiState.update { state -> state.favoriteSelection(direction)?.let { state.copy(selection = it) } ?: state }
     }
 
     // 역 고르기 화면에서 고른 역을 그 칸에 넣는다

@@ -196,7 +196,7 @@ private fun browseRows(role: StationRole, state: InputUiState): List<PickerRow> 
         return rows
     }
     // 출발·도착: 설정에 저장한 자주 쓰는 역을 먼저, 그다음 노선 전체
-    val favorites = listOfNotNull(state.home, state.work)
+    val favorites = listOfNotNull(state.favoriteOrigin, state.favoriteDestination)
         .filter { selection.canPick(role, it) }
         .distinct()
     if (favorites.isNotEmpty()) {
@@ -213,7 +213,7 @@ private fun browseRows(role: StationRole, state: InputUiState): List<PickerRow> 
 @Composable
 private fun BrowseList(role: StationRole, state: InputUiState, onPick: (Station) -> Unit, onSkipVia: () -> Unit) {
     val selection = state.selection
-    val rows = remember(role, state.sections, selection, state.home, state.work) { browseRows(role, state) }
+    val rows = remember(role, state.sections, selection, state.favoriteOrigin, state.favoriteDestination) { browseRows(role, state) }
     // 출발·도착은 지금 칸에 들어 있는 역 근처로 내려가 있는다(인천처럼 아래쪽 역도 바로 보인다).
     // 들를 역(맨 위 "바로 가기")과 자주 쓰는 역이 있을 때는 맨 위 줄이 가려지지 않게 내려가지 않는다
     val mine = selection.stationOf(role)

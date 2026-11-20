@@ -62,6 +62,7 @@ import com.teumta.app.domain.model.Station
 import com.teumta.app.ui.formatDuration
 import com.teumta.app.ui.formatServiceDay
 import com.teumta.app.ui.info.AppInfo
+import com.teumta.core.designsystem.component.TeumtaBulletList
 import com.teumta.core.designsystem.component.TeumtaButton
 import com.teumta.core.designsystem.icon.TeumtaIcons
 import com.teumta.core.designsystem.theme.TeumtaDimens
@@ -116,7 +117,7 @@ fun InputRoute(
         onStayChange = viewModel::onStayChange,
         onCalculate = { viewModel.onCalculate()?.let(onCalculate) },
         onSettingsClick = onSettingsClick,
-        onCommute = viewModel::onCommute,
+        onFavoriteRoute = viewModel::onFavoriteRoute,
         onPolicyNoticeSeen = viewModel::onPolicyNoticeSeen,
         onPendingOpenHandled = viewModel::onPendingOpenHandled,
     )
@@ -133,7 +134,7 @@ fun InputScreen(
     onStayChange: (Int) -> Unit,
     onCalculate: () -> Unit,
     onSettingsClick: () -> Unit,
-    onCommute: (CommuteDirection) -> Unit,
+    onFavoriteRoute: (FavoriteDirection) -> Unit,
     onPolicyNoticeSeen: () -> Unit,
     onPendingOpenHandled: () -> Unit = {},
 ) {
@@ -158,8 +159,8 @@ fun InputScreen(
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState()),
         ) {
-            HomeTopBar(onSettingsClick)
-            CommuteChips(state.home, state.work, onCommute)
+            InputTopBar(onSettingsClick)
+            FavoriteChips(state.favoriteOrigin, state.favoriteDestination, onFavoriteRoute)
             if (state.isLoading) {
                 Box(Modifier.fillMaxWidth().height(182.dp), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = TeumtaTheme.colors.actionPrimary)
@@ -212,7 +213,7 @@ enum class TimeSheetKind { ARRIVE, STAY }
 
 // 왼쪽에 로고와 틈타, 오른쪽에 설정
 @Composable
-private fun HomeTopBar(onSettingsClick: () -> Unit) {
+private fun InputTopBar(onSettingsClick: () -> Unit) {
     val colors = TeumtaTheme.colors
     Row(
         modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp, top = 12.dp, bottom = 4.dp),
@@ -237,8 +238,8 @@ private fun HomeTopBar(onSettingsClick: () -> Unit) {
 // 설정에서 자주 쓰는 두 역을 저장해 두었으면 한 번에 출발·도착을 채우는 버튼 두 개(가는 길, 오는 길).
 // 어떤 길인지 짐작하지 않고 역 이름으로만 보여 준다(예: 동암 → 가산디지털단지). 둘 중 하나라도 없으면 칸만 띄운다
 @Composable
-private fun CommuteChips(home: Station?, work: Station?, onCommute: (CommuteDirection) -> Unit) {
-    if (home == null || work == null) {
+private fun FavoriteChips(favoriteOrigin: Station?, favoriteDestination: Station?, onFavoriteRoute: (FavoriteDirection) -> Unit) {
+    if (favoriteOrigin == null || favoriteDestination == null) {
         Spacer(Modifier.height(TeumtaDimens.Space12))
         return
     }
@@ -247,8 +248,8 @@ private fun CommuteChips(home: Station?, work: Station?, onCommute: (CommuteDire
         horizontalArrangement = Arrangement.spacedBy(ChipSpacing),
         verticalArrangement = Arrangement.spacedBy(ChipSpacing),
     ) {
-        RouteChip(home, work) { onCommute(CommuteDirection.TO_WORK) }
-        RouteChip(work, home) { onCommute(CommuteDirection.TO_HOME) }
+        RouteChip(favoriteOrigin, favoriteDestination) { onFavoriteRoute(FavoriteDirection.FORWARD) }
+        RouteChip(favoriteDestination, favoriteOrigin) { onFavoriteRoute(FavoriteDirection.BACKWARD) }
     }
 }
 
@@ -502,10 +503,17 @@ private fun PolicyNoticeDialog(onSeen: () -> Unit) {
     AlertDialog(
         onDismissRequest = onSeen,
         title = { Text("개인정보처리방침이 바뀌어요") },
+        // 줄글 대신 한 줄에 한 가지씩 점 목록으로
         text = {
-            Text(
-                "${AppInfo.PRIVACY_EFFECTIVE_DATE}부터 시행해요. 회원가입·로그인이 생겨서, 가입하면 이메일과 집역·회사역을 " +
-                    "틈타 서버(호주)에 저장해요. 시간표도 서버에서 받아요. 로그인하지 않으면 계정 정보는 보내지 않아요.",
+            TeumtaBulletList(
+                listOf(
+                    "${AppInfo.PRIVACY_EFFECTIVE_DATE}부터 시행해요.",
+                    "회원가입·로그인이 생겼어요.",
+                    "가입하면 이메일과 자주 쓰는 두 역을 틈타 서버(호주)에 저장해요.",
+                    "시간표도 서버에서 받아요.",
+                    "로그인하지 않으면 계정 정보는 보내지 않아요.",
+                ),
+                style = TeumtaTheme.typography.bodyS,
             )
         },
         confirmButton = { TextButton(onClick = onSeen) { Text("확인") } },
@@ -538,8 +546,8 @@ private fun InputScreenPreview() {
                 sections = stationSections(tree),
                 selection = RouteSelection(tree, from = stations[0], to = stations[4], via = stations[2]),
                 arriveBy = LocalTime.of(21, 0),
-                home = stations[4],
-                work = stations[0],
+                favoriteOrigin = stations[4],
+                favoriteDestination = stations[0],
             ),
             onPickStation = {},
             onClearVia = {},
@@ -548,7 +556,7 @@ private fun InputScreenPreview() {
             onStayChange = {},
             onCalculate = {},
             onSettingsClick = {},
-            onCommute = {},
+            onFavoriteRoute = {},
             onPolicyNoticeSeen = {},
         )
     }

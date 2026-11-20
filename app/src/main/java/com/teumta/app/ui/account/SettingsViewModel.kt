@@ -18,11 +18,11 @@ data class SettingsUiState(
     val isLoggedIn: Boolean = false,
     // 서버에서 받은 내 이메일. 아직 못 받았거나 못 받으면 null
     val email: String? = null,
-    // 저장한 집역·회사역 이름. 정하지 않았으면 null
-    val homeName: String? = null,
-    val workName: String? = null,
+    // 저장한 자주 쓰는 두 역 이름. 정하지 않았으면 null
+    val originName: String? = null,
+    val destinationName: String? = null,
     // 로그아웃·탈퇴를 보내는 중이면 버튼을 막는다
-    val isWorking: Boolean = false,
+    val isBusy: Boolean = false,
     // 화면 아래에 보여 줄 결과나 오류 ("로그아웃했어요", "서버에 연결하지 못했어요" 등)
     val message: String? = null,
 )
@@ -37,12 +37,12 @@ class SettingsViewModel @Inject constructor(
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
     init {
-        // 집역·회사역이 바뀌면(저장, 로그아웃) 역 이름으로 바꿔 보여 준다
+        // 두 역이 바뀌면(저장, 로그아웃) 역 이름으로 바꿔 보여 준다
         viewModelScope.launch {
             val names = timetableRepository.getStations().associate { it.id to it.name }
-            repository.commute.collect { commute ->
+            repository.favoriteStations.collect { favoriteStations ->
                 _uiState.update {
-                    it.copy(homeName = commute?.homeStationId?.let(names::get), workName = commute?.workStationId?.let(names::get))
+                    it.copy(originName = favoriteStations?.originStationId?.let(names::get), destinationName = favoriteStations?.destinationStationId?.let(names::get))
                 }
             }
         }
@@ -80,8 +80,8 @@ class SettingsViewModel @Inject constructor(
     fun onWithdraw() = run("탈퇴했어요. 계정과 저장한 정보를 지웠어요.") { repository.withdraw() }
 
     private fun run(doneMessage: String, action: suspend () -> Unit) {
-        if (_uiState.value.isWorking) return
-        _uiState.update { it.copy(isWorking = true, message = null) }
+        if (_uiState.value.isBusy) return
+        _uiState.update { it.copy(isBusy = true, message = null) }
         viewModelScope.launch {
             val message = try {
                 action()
@@ -91,7 +91,7 @@ class SettingsViewModel @Inject constructor(
             } catch (e: Exception) {
                 e.toUserMessage()
             }
-            _uiState.update { it.copy(isWorking = false, message = message) }
+            _uiState.update { it.copy(isBusy = false, message = message) }
         }
     }
 }

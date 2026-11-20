@@ -34,6 +34,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teumta.app.ui.info.AppInfo
 import com.teumta.core.designsystem.component.TeumtaAppBar
+import com.teumta.core.designsystem.component.TeumtaHelpButton
 import com.teumta.core.designsystem.component.TeumtaButton
 import com.teumta.core.designsystem.component.TeumtaTextField
 import com.teumta.core.designsystem.icon.TeumtaIcons
@@ -70,7 +71,7 @@ fun SignupScreen(
     val uriHandler = LocalUriHandler.current
     val context = LocalContext.current
 
-    Scaffold(topBar = { TeumtaAppBar(title = "회원가입", onBack = onBack, modifier = Modifier.statusBarsPadding()) }) { innerPadding ->
+    Scaffold(topBar = { TeumtaAppBar(title = "회원가입", onBack = onBack, modifier = Modifier.statusBarsPadding(), actions = { TeumtaHelpButton("가입하면", SIGNUP_HELP) }) }) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -114,11 +115,6 @@ fun SignupScreen(
                 Text("만 14세 이상이에요", style = TeumtaTheme.typography.body, modifier = Modifier.padding(start = TeumtaDimens.Space8))
             }
             state.ageError?.let { Text(it, style = TeumtaTheme.typography.bodyS, color = TeumtaTheme.colors.textDanger) }
-            Text(
-                "가입하면 이메일과 비밀번호(알아볼 수 없게 바꾼 값)를 틈타 서버(호주)에 저장해요. 앱 설정에서 언제든 탈퇴할 수 있어요.",
-                style = TeumtaTheme.typography.bodyS,
-                color = TeumtaTheme.colors.textSecondary,
-            )
             TextButton(onClick = {
                 // 브라우저가 없으면 openUri가 예외를 던져 앱이 꺼진다(앱 정보 화면과 같은 처리)
                 runCatching { uriHandler.openUri(AppInfo.PRIVACY_URL) }
@@ -134,6 +130,13 @@ fun SignupScreen(
         }
     }
 }
+
+// 가입하면 무엇을 어디에 저장하는지. 자세한 내용은 개인정보처리방침 보기
+private val SIGNUP_HELP = listOf(
+    "이메일과 비밀번호를 틈타 서버(호주)에 저장해요.",
+    "비밀번호는 알아볼 수 없는 값으로 바꿔서 저장해요.",
+    "앱 설정에서 언제든 탈퇴할 수 있고, 탈퇴하면 바로 지워요.",
+)
 
 @Preview(showBackground = true)
 @Composable
