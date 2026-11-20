@@ -33,7 +33,7 @@ interface AuthApi {
     @DELETE("api/members/me")
     suspend fun withdraw(@Header("Authorization") authorization: String)
 
-    // 집역·회사역을 함께 바꾼다. null이면 그 역을 지운다. 바뀐 내 정보를 돌려준다
+    // 자주 쓰는 두 역을 함께 바꾼다. null이면 그 역을 지운다. 바뀐 내 정보를 돌려준다
     @PUT("api/members/me/stations")
     suspend fun updateStations(
         @Header("Authorization") authorization: String,
@@ -52,7 +52,7 @@ data class RefreshRequest(val refreshToken: String)
 
 // null도 그대로 보낸다(JSON의 null). 서버는 null을 "지우기"로 읽는다
 @Serializable
-data class UpdateStationsRequest(val homeStationId: String?, val workStationId: String?)
+data class UpdateStationsRequest(val originStationId: String?, val destinationStationId: String?)
 
 // expiresIn(초)은 받지만 쓰지 않는다. 만료는 서버가 401로 알려 주면 그때 갱신한다
 @Serializable
@@ -63,8 +63,8 @@ data class TokenResponse(val accessToken: String, val refreshToken: String)
 data class MemberResponse(
     val id: Long,
     val email: String,
-    val homeStationId: String? = null,
-    val workStationId: String? = null,
+    val originStationId: String? = null,
+    val destinationStationId: String? = null,
 )
 
 // 서버의 모든 오류 응답 모양 {code, message, fieldErrors}

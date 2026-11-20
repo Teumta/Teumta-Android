@@ -109,7 +109,7 @@ class AccountRepositoryTest {
         val repository = AccountRepository(api, store)
         server.enqueue(json(401, """{"code":"UNAUTHORIZED","message":"로그인이 필요해요.","fieldErrors":[]}"""))
         server.enqueue(json(200, tokens("new-access", "R2")))
-        server.enqueue(json(200, """{"id":1,"email":"me@example.com","createdAt":"2026-11-19T00:00:00Z","homeStationId":null,"workStationId":null}"""))
+        server.enqueue(json(200, """{"id":1,"email":"me@example.com","createdAt":"2026-11-19T00:00:00Z","originStationId":null,"destinationStationId":null}"""))
 
         val me = repository.getMe()
 
@@ -217,10 +217,10 @@ class AccountRepositoryTest {
     }
 
     @Test
-    fun 집역_회사역을_저장하면_서버에_보내고_들고_있는다() = runTest {
+    fun 두_역을_저장하면_서버에_보내고_들고_있는다() = runTest {
         val store = tokenStore(backgroundScope).apply { save(Tokens("A1", "R1")) }
         val repository = AccountRepository(api, store)
-        server.enqueue(json(200, """{"id":1,"email":"me@example.com","homeStationId":"MTRKR1161","workStationId":null}"""))
+        server.enqueue(json(200, """{"id":1,"email":"me@example.com","originStationId":"MTRKR1161","destinationStationId":null}"""))
 
         repository.updateStations("MTRKR1161", null)
 
@@ -229,35 +229,35 @@ class AccountRepositoryTest {
         assertEquals("/api/members/me/stations", request.target)
         assertEquals("Bearer A1", request.headers["Authorization"])
         // 지울 역은 빼지 않고 null로 보낸다
-        assertEquals("""{"homeStationId":"MTRKR1161","workStationId":null}""", request.body?.utf8())
-        assertEquals(Commute("MTRKR1161", null), repository.commute.value)
+        assertEquals("""{"originStationId":"MTRKR1161","destinationStationId":null}""", request.body?.utf8())
+        assertEquals(FavoriteStations("MTRKR1161", null), repository.favoriteStations.value)
     }
 
     @Test
     fun 같은_역이면_서버의_이유를_보여_주고_들고_있던_값은_그대로다() = runTest {
         val store = tokenStore(backgroundScope).apply { save(Tokens("A1", "R1")) }
         val repository = AccountRepository(api, store)
-        server.enqueue(json(200, """{"id":1,"email":"me@example.com","homeStationId":"MTRKR1161","workStationId":"MTRS11150"}"""))
+        server.enqueue(json(200, """{"id":1,"email":"me@example.com","originStationId":"MTRKR1161","destinationStationId":"MTRS11150"}"""))
         repository.getMe()
-        server.enqueue(json(400, """{"code":"SAME_HOME_AND_WORK","message":"집역과 회사역을 다르게 골라 주세요.","fieldErrors":[]}"""))
+        server.enqueue(json(400, """{"code":"SAME_STATIONS","message":"출발역과 도착역을 다르게 골라 주세요.","fieldErrors":[]}"""))
 
         val error = runCatching { repository.updateStations("MTRKR1141", "MTRKR1141") }.exceptionOrNull()
 
-        assertEquals("집역과 회사역을 다르게 골라 주세요.", error?.toUserMessage())
-        assertEquals(Commute("MTRKR1161", "MTRS11150"), repository.commute.value)
+        assertEquals("출발역과 도착역을 다르게 골라 주세요.", error?.toUserMessage())
+        assertEquals(FavoriteStations("MTRKR1161", "MTRS11150"), repository.favoriteStations.value)
     }
 
     @Test
-    fun 로그아웃하면_집역_회사역도_잊는다() = runTest {
+    fun 로그아웃하면_저장한_두_역도_잊는다() = runTest {
         val store = tokenStore(backgroundScope).apply { save(Tokens("A1", "R1")) }
         val repository = AccountRepository(api, store)
-        server.enqueue(json(200, """{"id":1,"email":"me@example.com","homeStationId":"MTRKR1161","workStationId":"MTRS11150"}"""))
+        server.enqueue(json(200, """{"id":1,"email":"me@example.com","originStationId":"MTRKR1161","destinationStationId":"MTRS11150"}"""))
         repository.getMe()
         server.enqueue(MockResponse.Builder().code(204).build())
 
         repository.logout()
 
-        assertEquals(null, repository.commute.value)
+        assertEquals(null, repository.favoriteStations.value)
     }
 
     private fun tokens(access: String, refresh: String) =

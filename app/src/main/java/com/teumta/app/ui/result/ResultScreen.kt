@@ -98,19 +98,40 @@ fun ResultScreen(state: ResultUiState, actions: ResultActions, onNextDay: () -> 
                             is DepartureResult.Success -> SuccessContent(state, result, actions.onAddVia)
                             is DepartureResult.Failure -> FailureContent(state, result.reason, actions, onNextDay)
                         }
-                        Text(
-                            text = "${formatServiceDay(state.day.date, state.day.dayType)} · " +
-                                "${formatTimetableNote(state.timetableSource, state.baseDate)} · 실시간 지연은 반영하지 않아요",
-                            modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = TeumtaDimens.Space24, bottom = 28.dp),
-                            style = TeumtaTheme.typography.caption,
-                            color = colors.textTertiary,
-                        )
+                        CalculationBasis(state)
                     }
                 }
             }
         }
     }
 }
+
+// 맨 아래: 무엇을 기준으로 계산했는지. 한 줄에 몰아 쓰지 않고 이름·값으로 나눠 적는다
+@Composable
+private fun CalculationBasis(state: ResultUiState.Ready) {
+    val colors = TeumtaTheme.colors
+    Column(
+        modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = TeumtaDimens.Space24, bottom = 28.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        HorizontalDivider(Modifier.padding(bottom = 10.dp), TeumtaDimens.StrokeHairline, colors.borderDefault)
+        BasisRow("계산한 날", formatServiceDay(state.day.date, state.day.dayType))
+        BasisRow("시간표", formatTimetableNote(state.timetableSource, state.baseDate))
+        BasisRow("실시간 지연", "반영하지 않아요")
+    }
+}
+
+@Composable
+private fun BasisRow(label: String, value: String) {
+    val colors = TeumtaTheme.colors
+    Row(horizontalArrangement = Arrangement.spacedBy(TeumtaDimens.Space12)) {
+        Text(label, modifier = Modifier.width(BASIS_LABEL_WIDTH), style = TeumtaTheme.typography.caption, color = colors.textTertiary)
+        Text(value, modifier = Modifier.weight(1f), style = TeumtaTheme.typography.caption, color = colors.textSecondary)
+    }
+}
+
+// 이름 칸 폭. 큰 글꼴에서도 "실시간 지연"이 꺾이지 않게 글꼴 크기를 따라 넓힌다
+private val BASIS_LABEL_WIDTH @Composable get() = with(LocalDensity.current) { 12.sp.toDp() * 6.5f }
 
 // 뒤로 가기와 "출발 → 도착", 그 밑에 들르는지 한 줄
 @Composable

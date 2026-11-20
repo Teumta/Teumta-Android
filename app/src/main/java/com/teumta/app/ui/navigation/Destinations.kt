@@ -20,7 +20,7 @@ object LoginDestination
 object SignupDestination
 
 @Serializable
-object CommuteDestination
+object FavoriteStationsDestination
 
 @Serializable
 data class ResultDestination(
