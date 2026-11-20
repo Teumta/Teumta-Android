@@ -110,6 +110,15 @@ class InputViewModel @Inject constructor(
         _uiState.update { it.copy(arriveBy = time) }
     }
 
+    // 결과 화면에서 돌아오기 전에 부른다. 입력 화면이 다시 보이면 그것을 연다
+    fun requestOpen(request: InputOpenRequest) {
+        _uiState.update { it.copy(pendingOpen = request) }
+    }
+
+    fun onPendingOpenHandled() {
+        _uiState.update { it.copy(pendingOpen = null) }
+    }
+
     fun onStayChange(minutes: Int) {
         _uiState.update { it.copy(stayMin = minutes) }
     }

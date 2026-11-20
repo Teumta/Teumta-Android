@@ -70,13 +70,7 @@ class DepartureCalculator(private val timetable: Timetable) {
     private val transferSecById = timetable.stations.associate { it.id to (it.transferSec ?: TRANSFER_BUFFER_SEC) }
 
     fun calculate(request: DepartureRequest): DepartureResult {
-        val stationIds = listOfNotNull(request.fromId, request.viaId, request.toId)
-        require(stationIds.toSet().size == stationIds.size) { "출발역, 경유역, 도착역은 서로 달라야 한다" }
-        stationIds.forEach { require(it in transferSecById) { "시간표에 없는 역: $it" } }
-        val search = JourneySearch(
-            trains = timetable.trains.filter { it.dayType == request.dayType },
-            transferSecOf = { transferSecById.getValue(it) },
-        )
+        val search = searchFor(request)
         val viaId = request.viaId ?: return calculateDirect(search, request)
 
         // 1. 경유역 -> 도착역
@@ -93,12 +87,38 @@ class DepartureCalculator(private val timetable: Timetable) {
 
         val now = request.nowSec
         if (now != null && departs[0] < now) {
-            return DepartureResult.Failure(FailReason.ALREADY_DEPARTED)
+            // 지금 떠나는 열차로 덜 머물면 들를 수 있다면 머무를 시간이 문제다. 그것도 안 되면 정말 늦었다
+            val reason = if (maxStaySec(request) != null) FailReason.STAY_TOO_LONG else FailReason.ALREADY_DEPARTED
+            return DepartureResult.Failure(reason)
         }
         val alternative = departs.getOrNull(1)?.takeIf { now == null || it >= now }
         return DepartureResult.Success(
             plan = DeparturePlan(journey(search, request.fromId, viaId, departs[0], viaDeadline), second),
             alternative = alternative?.let { DeparturePlan(journey(search, request.fromId, viaId, it, viaDeadline), second) },
+        )
+    }
+
+    // 들를 역에서 가장 오래 머무를 수 있는 시간(초, 내리고 타는 여유는 뺐다). "머무를 시간 줄이기"에 쓴다.
+    // 도착역으로 가는 마지막 열차(1번과 같다)는 그대로 두고, 출발역에서 가장 일찍 떠나 들를 역에 닿으면 가장 오래 머문다.
+    // 지금 시각을 넣었으면 지금 이후에 떠나는 열차만 본다. 들를 역이 없거나, 0분만 머물러도 갈 수 없으면 null
+    fun maxStaySec(request: DepartureRequest): Int? {
+        val viaId = request.viaId ?: return null
+        val search = searchFor(request)
+        val secondDepart = search.latestDepartures(viaId, request.toId, request.arriveBySec, limit = 1).firstOrNull() ?: return null
+        val viaDeadline = secondDepart - TRANSFER_BUFFER_SEC
+        // 늦게 떠나는 순으로 모두 받아서, 지금 이후 가운데 가장 이른 출발을 고른다
+        val earliest = search.latestDepartures(request.fromId, viaId, viaDeadline, limit = Int.MAX_VALUE)
+            .lastOrNull { request.nowSec == null || it >= request.nowSec } ?: return null
+        return viaDeadline - journey(search, request.fromId, viaId, earliest, viaDeadline).arriveSec
+    }
+
+    private fun searchFor(request: DepartureRequest): JourneySearch {
+        val stationIds = listOfNotNull(request.fromId, request.viaId, request.toId)
+        require(stationIds.toSet().size == stationIds.size) { "출발역, 경유역, 도착역은 서로 달라야 한다" }
+        stationIds.forEach { require(it in transferSecById) { "시간표에 없는 역: $it" } }
+        return JourneySearch(
+            trains = timetable.trains.filter { it.dayType == request.dayType },
+            transferSecOf = { transferSecById.getValue(it) },
         )
     }
 
