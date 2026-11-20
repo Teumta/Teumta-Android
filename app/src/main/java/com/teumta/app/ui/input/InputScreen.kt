@@ -24,15 +24,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TimePicker
-import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -61,6 +58,7 @@ import com.teumta.app.domain.ServiceTime
 import com.teumta.app.domain.StationTree
 import com.teumta.app.domain.chooseCalculationDay
 import com.teumta.app.domain.model.Station
+import com.teumta.app.ui.formatDuration
 import com.teumta.app.ui.formatServiceDay
 import com.teumta.app.ui.info.AppInfo
 import com.teumta.core.designsystem.component.TeumtaButton
@@ -128,8 +126,8 @@ fun InputScreen(
     onCommute: (CommuteDirection) -> Unit,
     onPolicyNoticeSeen: () -> Unit,
 ) {
-    // 대화상자를 열었는지는 화면만 알면 되는 값이라 ViewModel에 두지 않는다
-    var showTimePicker by rememberSaveable { mutableStateOf(false) }
+    // 어느 시간 시트를 열었는지는 화면만 알면 되는 값이라 ViewModel에 두지 않는다
+    var openSheet by rememberSaveable { mutableStateOf<TimeSheetKind?>(null) }
     val selection = state.selection
 
     Scaffold(
@@ -153,8 +151,10 @@ fun InputScreen(
             }
             Spacer(Modifier.height(20.dp))
             SectionGap()
-            ArriveBySection(state.arriveBy, selection.to, onTimeClick = { showTimePicker = true })
-            selection.via?.let { via -> StaySection(via, state.stayMin, onStayChange) }
+            ArriveBySection(state.arriveBy, selection.to, onTimeClick = { openSheet = TimeSheetKind.ARRIVE })
+            selection.via?.let { via ->
+                StaySection(via, state.stayMin, onStayChange, onCustomClick = { openSheet = TimeSheetKind.STAY })
+            }
             Spacer(Modifier.height(TeumtaDimens.Space24))
         }
     }
@@ -163,17 +163,34 @@ fun InputScreen(
         PolicyNoticeDialog(onSeen = onPolicyNoticeSeen)
     }
 
-    if (showTimePicker) {
-        ArriveByDialog(
+    when (openSheet) {
+        TimeSheetKind.ARRIVE -> ArriveBySheet(
             initial = state.arriveBy,
+            toName = selection.to?.name,
             onConfirm = {
                 onArriveByChange(it)
-                showTimePicker = false
+                openSheet = null
             },
-            onDismiss = { showTimePicker = false },
+            onDismiss = { openSheet = null },
         )
+        // 시트가 열린 채 들를 역을 지울 수는 없지만, 혹시 없으면 열지 않는다
+        TimeSheetKind.STAY -> selection.via?.let { via ->
+            StaySheet(
+                initialMin = state.stayMin,
+                viaName = via.name,
+                onConfirm = {
+                    onStayChange(it)
+                    openSheet = null
+                },
+                onDismiss = { openSheet = null },
+            )
+        }
+        null -> Unit
     }
 }
+
+// 입력 화면에서 여는 시간 시트 두 가지
+enum class TimeSheetKind { ARRIVE, STAY }
 
 // 왼쪽에 로고와 틈타, 오른쪽에 설정
 @Composable
@@ -378,7 +395,7 @@ private fun SectionHeader(title: String, summary: String) {
     }
 }
 
-// 도착 시각. 칩을 누르면 시각을 고른다(시·분 바퀴는 다음 작업에서 바꾼다)
+// 도착 시각. 칩을 누르면 시·분 바퀴 시트가 열린다
 @Composable
 private fun ArriveBySection(arriveBy: LocalTime, to: Station?, onTimeClick: () -> Unit) {
     val time = arriveBy.format(TIME)
@@ -397,21 +414,32 @@ private fun ArriveBySection(arriveBy: LocalTime, to: Station?, onTimeClick: () -
     }
 }
 
-// 머무를 시간. 들를 역이 있을 때만 보인다
+// 머무를 시간. 들를 역이 있을 때만 보인다. 자주 쓰는 칩 세 개와, 그 밖의 시간을 바퀴로 고르는 칩 하나.
+// 칩에 없는 시간을 골라 두었으면 마지막 칩이 "직접 입력" 대신 그 시간을 보여 주고 골라진 모양이 된다
 @Composable
-private fun StaySection(via: Station, stayMin: Int, onStayChange: (Int) -> Unit) {
+private fun StaySection(via: Station, stayMin: Int, onStayChange: (Int) -> Unit, onCustomClick: () -> Unit) {
+    val custom = stayMin !in StayChoice.CHIPS
     Column(
         modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 24.dp),
         verticalArrangement = Arrangement.spacedBy(TeumtaDimens.Space12),
     ) {
-        SectionHeader("머무를 시간", "${via.name}에서 ${stayLabel(stayMin)}")
+        SectionHeader("머무를 시간", "${via.name}에서 ${formatDuration(stayMin * 60)}")
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(ChipSpacing),
             verticalArrangement = Arrangement.spacedBy(ChipSpacing),
         ) {
-            InputViewModel.STAY_OPTIONS.forEach { minutes ->
-                TeumtaChip(label = stayLabel(minutes), onClick = { onStayChange(minutes) }, selected = stayMin == minutes)
+            StayChoice.CHIPS.forEach { minutes ->
+                TeumtaChip(label = formatDuration(minutes * 60), onClick = { onStayChange(minutes) }, selected = stayMin == minutes)
             }
+            TeumtaChip(
+                label = if (custom) formatDuration(stayMin * 60) else "직접 입력",
+                onClick = onCustomClick,
+                selected = custom,
+                trailingIcon = if (custom) TeumtaIcons.ChevronDown else null,
+                modifier = Modifier.semantics {
+                    contentDescription = if (custom) "머무를 시간 ${formatDuration(stayMin * 60)}, 바꾸기" else "머무를 시간 직접 입력"
+                },
+            )
         }
     }
 }
@@ -474,24 +502,8 @@ private fun PolicyNoticeDialog(onSeen: () -> Unit) {
     )
 }
 
-private val TIME = DateTimeFormatter.ofPattern("HH:mm")
-
-private fun stayLabel(minutes: Int): String = if (minutes % 60 == 0) "${minutes / 60}시간" else "${minutes}분"
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ArriveByDialog(initial: LocalTime, onConfirm: (LocalTime) -> Unit, onDismiss: () -> Unit) {
-    val pickerState = rememberTimePickerState(initialHour = initial.hour, initialMinute = initial.minute, is24Hour = true)
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("언제까지 도착해야 하나요?") },
-        text = { TimePicker(state = pickerState) },
-        confirmButton = {
-            TextButton(onClick = { onConfirm(LocalTime.of(pickerState.hour, pickerState.minute)) }) { Text("확인") }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("취소") } },
-    )
-}
+// 입력 화면과 시간 시트가 함께 쓴다
+internal val TIME: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 
 @Preview(showBackground = true)
 @Composable
