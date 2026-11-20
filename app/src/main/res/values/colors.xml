@@ -9,4 +9,6 @@
     <color name="white">#FFFFFFFF</color>
     <!-- 앱 아이콘 배경 (Theme의 Orange600과 같은 색) -->
     <color name="teumta_orange">#FFCC4B0C</color>
+    <!-- 스플래시 바탕 (다크는 values-night) -->
+    <color name="teumta_splash_bg">#FFFFFFFF</color>
 </resources>
