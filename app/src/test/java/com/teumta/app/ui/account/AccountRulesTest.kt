@@ -28,6 +28,15 @@ class AccountRulesTest {
     }
 
     @Test
+    fun 비밀번호_확인은_두_칸이_똑같아야_한다() {
+        assertNull(AccountRules.passwordConfirmError("abcd1234", "abcd1234"))
+        assertEquals("비밀번호를 한 번 더 입력해 주세요.", AccountRules.passwordConfirmError("abcd1234", ""))
+        assertEquals("비밀번호가 서로 달라요.", AccountRules.passwordConfirmError("abcd1234", "abcd1235"))
+        // 대소문자도 다른 글자로 본다(서버도 그대로 비교한다)
+        assertEquals("비밀번호가 서로 달라요.", AccountRules.passwordConfirmError("abcd1234", "ABCD1234"))
+    }
+
+    @Test
     fun 로그인은_빈칸만_막는다() {
         assertNull(AccountRules.loginEmailError("me"))
         assertNull(AccountRules.loginPasswordError("short"))
