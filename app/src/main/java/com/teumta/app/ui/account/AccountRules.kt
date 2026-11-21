@@ -23,6 +23,13 @@ object AccountRules {
         else -> null
     }
 
+    // 가입할 때 비밀번호를 한 번 더 쳐서 오타를 막는다. 서버에는 보내지 않는 앱만의 검사다
+    fun passwordConfirmError(password: String, confirm: String): String? = when {
+        confirm.isEmpty() -> "비밀번호를 한 번 더 입력해 주세요."
+        confirm != password -> "비밀번호가 서로 달라요."
+        else -> null
+    }
+
     // 로그인은 빈칸만 막는다(서버 LoginRequest와 같다). 형식은 가입 때 이미 검사했다
     fun loginEmailError(email: String): String? = if (email.isBlank()) "이메일을 입력해 주세요." else null
 
