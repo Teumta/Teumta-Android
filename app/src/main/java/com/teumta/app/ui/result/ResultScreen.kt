@@ -24,6 +24,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -45,6 +46,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teumta.app.R
 import com.teumta.app.domain.DeparturePlan
@@ -56,10 +60,12 @@ import com.teumta.app.ui.formatServiceDay
 import com.teumta.app.ui.formatTimetableNote
 import com.teumta.app.ui.input.SectionGap
 import com.teumta.app.ui.input.StayChoice
+import com.teumta.core.designsystem.component.TeumtaHelpButton
 import com.teumta.core.designsystem.icon.TeumtaIcons
 import com.teumta.core.designsystem.theme.TeumtaColors
 import com.teumta.core.designsystem.theme.TeumtaDimens
 import com.teumta.core.designsystem.theme.TeumtaTheme
+import kotlinx.coroutines.delay
 
 // 결과 화면에서 입력 화면으로 돌아가며 할 일. 입력 화면의 값을 바꾸는 일이라 NavHost가 입력 화면 ViewModel에 넘긴다
 data class ResultActions(
@@ -80,12 +86,40 @@ fun ResultRoute(
     viewModel: ResultViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    ResultScreen(state = state, actions = actions, onNextDay = viewModel::showNextDay)
+    val realtime by viewModel.realtime.collectAsStateWithLifecycle()
+    val realtimeRefreshing by viewModel.realtimeRefreshing.collectAsStateWithLifecycle()
+    // 화면이 보이는 동안만 1분마다 실시간을 다시 받는다. 다른 앱으로 가면 멈추고, 돌아오면 바로 한 번 받는다
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            while (true) {
+                viewModel.refreshRealtime()
+                delay(REALTIME_REFRESH_MS)
+            }
+        }
+    }
+    ResultScreen(
+        state = state,
+        actions = actions,
+        onNextDay = viewModel::showNextDay,
+        realtime = realtime,
+        realtimeRefreshing = realtimeRefreshing,
+        onRefreshRealtime = viewModel::refreshRealtime,
+    )
 }
+
+private const val REALTIME_REFRESH_MS = 60_000L
 
 // 원래 기획 S-04: 위에 경로, 큰 주황 답 시각과 사실 세 칸, 회색 띠 아래 색 레일 동선, 맨 아래 시간표 기준
 @Composable
-fun ResultScreen(state: ResultUiState, actions: ResultActions, onNextDay: () -> Unit) {
+fun ResultScreen(
+    state: ResultUiState,
+    actions: ResultActions,
+    onNextDay: () -> Unit,
+    realtime: Map<RealtimeTarget, RealtimeTrains> = emptyMap(),
+    realtimeRefreshing: Boolean = false,
+    onRefreshRealtime: () -> Unit = {},
+) {
     val colors = TeumtaTheme.colors
     Scaffold(containerColor = colors.bgSurface) { innerPadding ->
         Box(Modifier.fillMaxSize().padding(innerPadding)) {
@@ -95,7 +129,13 @@ fun ResultScreen(state: ResultUiState, actions: ResultActions, onNextDay: () -> 
                     ResultTopBar(state, actions.onBack)
                     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
                         when (val result = state.result) {
-                            is DepartureResult.Success -> SuccessContent(state, result, actions.onAddVia)
+                            is DepartureResult.Success -> SuccessContent(
+                                state = state,
+                                result = result,
+                                realtime = realtime,
+                                realtimeControls = RealtimeControls(realtimeRefreshing, onRefreshRealtime),
+                                onAddVia = actions.onAddVia,
+                            )
                             is DepartureResult.Failure -> FailureContent(state, result.reason, actions, onNextDay)
                         }
                         CalculationBasis(state)
@@ -117,7 +157,7 @@ private fun CalculationBasis(state: ResultUiState.Ready) {
         HorizontalDivider(Modifier.padding(bottom = 10.dp), TeumtaDimens.StrokeHairline, colors.borderDefault)
         BasisRow("계산한 날", formatServiceDay(state.day.date, state.day.dayType))
         BasisRow("시간표", formatTimetableNote(state.timetableSource, state.baseDate))
-        BasisRow("실시간 지연", "반영하지 않아요")
+        BasisRow("실시간 지연", "계산에는 반영하지 않아요")
     }
 }
 
@@ -162,7 +202,13 @@ private fun ResultTopBar(state: ResultUiState.Ready, onBack: () -> Unit) {
 }
 
 @Composable
-private fun SuccessContent(state: ResultUiState.Ready, result: DepartureResult.Success, onAddVia: () -> Unit) {
+private fun SuccessContent(
+    state: ResultUiState.Ready,
+    result: DepartureResult.Success,
+    realtime: Map<RealtimeTarget, RealtimeTrains>,
+    realtimeControls: RealtimeControls,
+    onAddVia: () -> Unit,
+) {
     val colors = TeumtaTheme.colors
     val plan = result.plan
 
@@ -212,8 +258,13 @@ private fun SuccessContent(state: ResultUiState.Ready, result: DepartureResult.S
             color = colors.textPrimary,
         )
         Text("${formatClock(plan.departSec)} – ${formatClock(plan.arriveSec)}", style = TeumtaTheme.typography.caption, color = colors.textTertiary)
+        // 실시간을 보여 줄 역이 있으면 새로고침과 설명(물음표)을 둔다. 못 받았을 때도 다시 받아 볼 수 있게 상자가 없어도 보인다
+        if (realtimeTargets(state).isNotEmpty()) {
+            RealtimeRefreshButton(realtimeControls)
+            TeumtaHelpButton("실시간 열차", REALTIME_HELP)
+        }
     }
-    Timeline(buildTimeline(plan, state::nameOf, state.arriveBySec), Modifier.padding(start = 20.dp, end = 20.dp, top = 12.dp))
+    Timeline(buildTimeline(plan, state::nameOf, state.arriveBySec), realtime, Modifier.padding(start = 20.dp, end = 20.dp, top = 12.dp))
 
     // 바로 가는 답이면 들렀다 가는 길도 있다고 알려 준다
     if (plan.second == null) {
@@ -252,7 +303,7 @@ private fun FactsRow(facts: List<Fact>) {
 
 // 동선: 왼쪽 시각, 가운데 레일과 점, 오른쪽 역과 설명. 레일 색은 그 구간의 색(열차 파랑, 머무름 주황, 갈아타기 회색)
 @Composable
-private fun Timeline(items: List<TimelineItem>, modifier: Modifier = Modifier) {
+private fun Timeline(items: List<TimelineItem>, realtime: Map<RealtimeTarget, RealtimeTrains>, modifier: Modifier = Modifier) {
     // 시각 칸 폭과 점 높이는 글꼴 크기를 따른다. 큰 글꼴에서 "19:29"가 두 줄로 꺾이거나 점이 역 이름보다 위에 뜨지 않게
     val density = LocalDensity.current
     val measurer = rememberTextMeasurer()
@@ -275,6 +326,8 @@ private fun Timeline(items: List<TimelineItem>, modifier: Modifier = Modifier) {
                     railBelow = (items.getOrNull(i + 1) as? TimelineItem.Segment)?.kind,
                     layout = layout,
                     timeStyle = timeStyle,
+                    // 타는 줄이면 그 역으로 지금 오는 열차(받았을 때만)
+                    realtime = item.boarding?.let(realtime::get),
                 )
                 is TimelineItem.Segment -> SegmentRow(item, layout)
             }
@@ -288,7 +341,14 @@ private data class TimelineLayout(val timeWidth: Dp, val dotCenterY: Dp)
 private val RAIL_COLUMN = 28.dp
 
 @Composable
-private fun StopRow(stop: TimelineItem.Stop, railAbove: SegmentKind?, railBelow: SegmentKind?, layout: TimelineLayout, timeStyle: TextStyle) {
+private fun StopRow(
+    stop: TimelineItem.Stop,
+    railAbove: SegmentKind?,
+    railBelow: SegmentKind?,
+    layout: TimelineLayout,
+    timeStyle: TextStyle,
+    realtime: RealtimeTrains?,
+) {
     val colors = TeumtaTheme.colors
     // 큰 글꼴로 역 이름이 길어져도 레일이 끊기지 않게 행 높이를 내용에 맞추고 레일 칸이 그 높이를 채운다
     Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min).heightIn(min = 48.dp)) {
@@ -322,6 +382,8 @@ private fun StopRow(stop: TimelineItem.Stop, railAbove: SegmentKind?, railBelow:
         Column(Modifier.weight(1f).padding(start = 8.dp, bottom = 6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(stop.title, style = TeumtaTheme.typography.body, fontWeight = FontWeight.SemiBold, color = colors.textPrimary)
             stop.detail?.let { Text(it, style = TeumtaTheme.typography.caption, color = colors.textTertiary) }
+            // 레일은 이 줄 높이를 따라 내려가므로, 상자가 붙어도 끊기지 않는다
+            realtime?.let { RealtimeBox(it, Modifier.padding(top = 6.dp, bottom = 4.dp)) }
         }
     }
 }

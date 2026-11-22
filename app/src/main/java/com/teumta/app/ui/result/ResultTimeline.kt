@@ -11,7 +11,14 @@ import com.teumta.app.ui.formatDuration
 
 // 동선 한 줄. 역에 서는 줄(Stop)과, 두 줄 사이를 잇는 레일 줄(Segment)이 번갈아 나온다
 sealed interface TimelineItem {
-    data class Stop(val timeSec: Int, val title: String, val detail: String?, val dot: StopDot) : TimelineItem
+    // boarding: 열차를 타는 줄이면 탈 역과 그 열차에서 내릴 역. 이 역으로 지금 오는 열차(실시간)를 붙이는 데 쓴다
+    data class Stop(
+        val timeSec: Int,
+        val title: String,
+        val detail: String?,
+        val dot: StopDot,
+        val boarding: RealtimeTarget? = null,
+    ) : TimelineItem
     data class Segment(val label: String, val kind: SegmentKind) : TimelineItem
 }
 
@@ -65,6 +72,7 @@ private fun journeyItems(journey: Journey, nameOf: (String) -> String, firstDot:
             title = "${nameOf(ride.fromId)} 승차",
             detail = "${ride.train.headsign}행",
             dot = if (i == 0) firstDot else StopDot.RIDE,
+            boarding = RealtimeTarget(ride.fromId, ride.toId),
         )
         val rail = TimelineItem.Segment("${formatDuration(ride.arriveSec - ride.departSec)} · ${stationCount(ride)}개 역", SegmentKind.TRAIN)
         val next = journey.rides.getOrNull(i + 1)
