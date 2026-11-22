@@ -31,6 +31,6 @@ class PolicyNoticeStoreTest {
     fun 확인하면_그_판을_기억한다() = runTest {
         val store = store(backgroundScope)
         store.markSeen(AppInfo.PRIVACY_VERSION)
-        assertEquals("0.3.0", store.seenVersion.first())
+        assertEquals("0.3.1", store.seenVersion.first())
     }
 }
