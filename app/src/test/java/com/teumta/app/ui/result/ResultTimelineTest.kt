@@ -35,7 +35,7 @@ class ResultTimelineTest {
 
         assertEquals(
             listOf(
-                TimelineItem.Stop(sec("08:00"), "가역 승차", "마역행", RIDE),
+                TimelineItem.Stop(sec("08:00"), "가역 승차", "마역행", RIDE, RealtimeTarget("A", "E")),
                 TimelineItem.Segment("20분 · 4개 역", TRAIN),
                 TimelineItem.Stop(sec("08:20"), "마역 도착", "목표보다 10분 일찍", END),
             ),
@@ -54,11 +54,11 @@ class ResultTimelineTest {
 
         assertEquals(
             listOf(
-                TimelineItem.Stop(sec("08:00"), "가역 승차", "마역행", RIDE),
+                TimelineItem.Stop(sec("08:00"), "가역 승차", "마역행", RIDE, RealtimeTarget("A", "C")),
                 TimelineItem.Segment("10분 · 2개 역", TRAIN),
                 TimelineItem.Stop(sec("08:10"), "다역 하차", null, RIDE),
                 TimelineItem.Segment("다역 갈아타기 · 10분", TRANSFER),
-                TimelineItem.Stop(sec("08:20"), "다역 승차", "마역행", RIDE),
+                TimelineItem.Stop(sec("08:20"), "다역 승차", "마역행", RIDE, RealtimeTarget("C", "E")),
                 TimelineItem.Segment("10분 · 2개 역", TRAIN),
                 TimelineItem.Stop(sec("08:30"), "마역 도착", "목표 시각에 맞춰 도착", END),
             ),
@@ -73,11 +73,11 @@ class ResultTimelineTest {
 
         assertEquals(
             listOf(
-                TimelineItem.Stop(sec("08:00"), "가역 승차", "마역행", RIDE),
+                TimelineItem.Stop(sec("08:00"), "가역 승차", "마역행", RIDE, RealtimeTarget("A", "C")),
                 TimelineItem.Segment("10분 · 2개 역", TRAIN),
                 TimelineItem.Stop(sec("08:10"), "다역 하차", null, VIA),
                 TimelineItem.Segment("48분 머무름 · 내리고 타는 여유 2분 제외", STAY),
-                TimelineItem.Stop(sec("09:00"), "다역 승차", "마역행", VIA),
+                TimelineItem.Stop(sec("09:00"), "다역 승차", "마역행", VIA, RealtimeTarget("C", "E")),
                 TimelineItem.Segment("10분 · 2개 역", TRAIN),
                 TimelineItem.Stop(sec("09:10"), "마역 도착", "목표보다 20분 일찍", END),
             ),

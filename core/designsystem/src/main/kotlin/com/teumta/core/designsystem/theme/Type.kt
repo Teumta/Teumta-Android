@@ -7,6 +7,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -21,9 +22,11 @@ val Pretendard = FontFamily(
     Font(R.font.pretendard_extrabold, FontWeight.ExtraBold),
 )
 
-// Figma와 같은 줄 높이: 글꼴 여백 없이 행간 가운데 정렬
+// Figma와 같은 줄 높이: 글꼴 여백 없이 행간 가운데 정렬.
+// 줄은 어절(띄어쓰기) 단위로 바꾼다. 기본값은 한국어를 글자 사이에서도 끊어서 "있/어요"처럼 낱말이 갈라진다(Android 13부터 적용)
 private val Base = TextStyle(
     fontFamily = Pretendard,
+    lineBreak = LineBreak.Paragraph.copy(wordBreak = LineBreak.WordBreak.Phrase),
     platformStyle = PlatformTextStyle(includeFontPadding = false),
     lineHeightStyle = LineHeightStyle(
         alignment = LineHeightStyle.Alignment.Center,

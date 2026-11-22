@@ -4,6 +4,7 @@ import com.teumta.app.BuildConfig
 import com.teumta.app.data.TimetableApi
 import com.teumta.app.data.TimetableParser
 import com.teumta.app.data.account.AuthApi
+import com.teumta.app.data.realtime.RealtimeApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -46,4 +47,9 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideAuthApi(retrofit: Retrofit): AuthApi = retrofit.create(AuthApi::class.java)
+
+    // 실시간 열차도 같은 서버다
+    @Provides
+    @Singleton
+    fun provideRealtimeApi(retrofit: Retrofit): RealtimeApi = retrofit.create(RealtimeApi::class.java)
 }
