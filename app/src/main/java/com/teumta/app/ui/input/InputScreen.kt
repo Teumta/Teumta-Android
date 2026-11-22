@@ -507,10 +507,11 @@ private fun PolicyNoticeDialog(onSeen: () -> Unit) {
         text = {
             TeumtaBulletList(
                 listOf(
-                    "${AppInfo.PRIVACY_EFFECTIVE_DATE}부터 시행해요.",
+                    "비공개 테스트 기간이라 이 앱부터 바로 적용해요(정식 시행일 ${AppInfo.PRIVACY_EFFECTIVE_DATE}).",
                     "회원가입·로그인이 생겼어요.",
                     "가입하면 이메일과 자주 쓰는 두 역을 틈타 서버(호주)에 저장해요.",
                     "시간표도 서버에서 받아요.",
+                    "결과 화면에서 실시간 열차를 볼 때 타는 역과 내리는 역을 서버에 보내요. 저장하지는 않아요.",
                     "로그인하지 않으면 계정 정보는 보내지 않아요.",
                 ),
                 style = TeumtaTheme.typography.bodyS,
