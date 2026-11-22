@@ -51,11 +51,12 @@ fun InfoScreen(onBack: () -> Unit) {
             TeumtaListRow(label = "노선", value = "1호선 102개 역")
             TeumtaListRow(label = "구간", value = "연천~인천·신창, 광명, 서동탄")
             TeumtaListRow(label = "시간표 기준일", value = AppInfo.TIMETABLE_BASE_DATE)
-            TeumtaListRow(label = "실시간 지연", value = "반영하지 않음", divider = false)
+            TeumtaListRow(label = "실시간 열차 위치", value = "결과 화면에 표시", divider = false)
 
             SectionGap()
             TeumtaListLabel("데이터 출처", help = { TeumtaHelpButton("데이터 출처", SOURCE_HELP) })
-            TeumtaListRow(label = AppInfo.DATA_SOURCE_NAME, sub = "공공데이터포털에서 보기", onClick = { open(AppInfo.DATA_SOURCE_URL) }, divider = false)
+            TeumtaListRow(label = AppInfo.DATA_SOURCE_NAME, sub = "공공데이터포털에서 보기", onClick = { open(AppInfo.DATA_SOURCE_URL) })
+            TeumtaListRow(label = AppInfo.REALTIME_SOURCE_NAME, sub = "서울 열린데이터광장에서 보기", onClick = { open(AppInfo.REALTIME_SOURCE_URL) }, divider = false)
 
             SectionGap()
             TeumtaListLabel("문의와 개인정보", help = { TeumtaHelpButton("개인정보", PRIVACY_HELP) })
@@ -84,16 +85,19 @@ fun InfoScreen(onBack: () -> Unit) {
 private val COVERAGE_HELP = listOf(
     "급행과 갈아타기까지 계산해요.",
     "갈아타는 시간은 역마다 2~5분으로 잡아요.",
-    "실시간 지연은 반영하지 않아서, 열차가 늦으면 실제와 다를 수 있어요.",
+    "늦어도 몇 시에 타야 하는지는 시간표로 계산해요. 열차가 늦으면 실제와 다를 수 있어요.",
+    "결과 화면의 동선에서 타는 역마다 지금 오는 열차의 위치를 함께 보여 줘요. 이 위치는 계산에 넣지 않아요.",
 )
 
 private val SOURCE_HELP = listOf(
     "시간표는 공공데이터포털의 국토교통부(TAGO) 지하철정보를 받아 만들었어요.",
+    "실시간 열차 위치는 서울 열린데이터광장의 지하철 실시간 열차 위치정보를 틈타 서버가 받아 전해요.",
     "틈타는 정부·철도 운영기관과 관계없는 개인 프로젝트예요.",
 )
 
 private val PRIVACY_HELP = listOf(
     "열차 계산은 휴대폰 안에서 해요.",
+    "실시간 열차를 볼 때만 타는 역과 내리는 역을 서버에 보내요. 서버는 저장하지 않아요.",
     "회원가입하면 이메일과 자주 쓰는 두 역을 서버에 저장해요.",
     "탈퇴하면 서버에서 바로 지워요.",
 )

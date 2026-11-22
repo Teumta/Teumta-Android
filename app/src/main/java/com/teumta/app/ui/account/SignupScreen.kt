@@ -53,6 +53,7 @@ fun SignupRoute(
         state = state,
         onEmailChange = viewModel::onEmailChange,
         onPasswordChange = viewModel::onPasswordChange,
+        onPasswordConfirmChange = viewModel::onPasswordConfirmChange,
         onAdultChange = viewModel::onAdultChange,
         onSubmit = viewModel::onSubmit,
         onBack = onBack,
@@ -64,6 +65,7 @@ fun SignupScreen(
     state: SignupUiState,
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
+    onPasswordConfirmChange: (String) -> Unit,
     onAdultChange: (Boolean) -> Unit,
     onSubmit: () -> Unit,
     onBack: () -> Unit,
@@ -98,6 +100,17 @@ fun SignupScreen(
                 leadingIcon = TeumtaIcons.Lock,
                 errorText = state.passwordError,
                 helperText = "영문·숫자·기호 8~64자",
+                enabled = !state.isSubmitting,
+                isPassword = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Next, hintLocales = EnglishKeyboard),
+            )
+            // 비밀번호를 한 번 더 쳐서 오타로 가입하는 일을 막는다(인증 메일이 없어서 비밀번호를 잊으면 되찾기 어렵다)
+            TeumtaTextField(
+                value = state.passwordConfirm,
+                onValueChange = onPasswordConfirmChange,
+                label = "비밀번호 확인",
+                leadingIcon = TeumtaIcons.Lock,
+                errorText = state.passwordConfirmError,
                 enabled = !state.isSubmitting,
                 isPassword = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done, hintLocales = EnglishKeyboard),
@@ -144,7 +157,7 @@ private fun SignupScreenPreview() {
     TeumtaTheme {
         SignupScreen(
             state = SignupUiState(email = "me", emailError = "이메일 형식이 아니에요."),
-            onEmailChange = {}, onPasswordChange = {}, onAdultChange = {}, onSubmit = {}, onBack = {},
+            onEmailChange = {}, onPasswordChange = {}, onPasswordConfirmChange = {}, onAdultChange = {}, onSubmit = {}, onBack = {},
         )
     }
 }

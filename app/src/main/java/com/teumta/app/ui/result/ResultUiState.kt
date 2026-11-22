@@ -3,7 +3,9 @@ package com.teumta.app.ui.result
 import com.teumta.app.domain.CalculationDay
 import com.teumta.app.domain.DeparturePlan
 import com.teumta.app.domain.DepartureResult
+import com.teumta.app.domain.model.RealtimeArrival
 import com.teumta.app.domain.model.TimetableSource
+import java.time.Instant
 
 sealed interface ResultUiState {
     data object Loading : ResultUiState
@@ -34,3 +36,6 @@ sealed interface ResultUiState {
         val viaName: String? get() = viaId?.let(::nameOf)
     }
 }
+
+// 타는 역 한 곳으로 지금 오는 열차. 가까운 순서로 두 편까지. checkedAt은 앱이 받아 온 시각(몇 분 전 위치인지 셀 때 쓴다)
+data class RealtimeTrains(val arrivals: List<RealtimeArrival>, val checkedAt: Instant)
