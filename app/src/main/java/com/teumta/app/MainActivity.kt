@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.teumta.app.ui.navigation.TeumtaNavHost
+import com.teumta.app.ui.update.AppUpdatePrompt
 import com.teumta.core.designsystem.theme.TeumtaTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -21,6 +22,8 @@ class MainActivity : ComponentActivity() {
         setContent {
             TeumtaTheme {
                 TeumtaNavHost()
+                // Play 스토어에 새 버전이 있으면 어느 화면에서든 한 번 알려 준다
+                AppUpdatePrompt()
             }
         }
     }

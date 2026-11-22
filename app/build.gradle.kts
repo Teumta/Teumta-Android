@@ -93,6 +93,8 @@ dependencies {
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.kotlinx.serialization)
     implementation(libs.okhttp)
+    // Play 스토어에 새 버전이 있으면 앱 안에서 바로 업데이트(인앱 업데이트)
+    implementation(libs.play.app.update.ktx)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.okhttp.mockwebserver)
